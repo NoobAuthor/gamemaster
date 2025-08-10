@@ -396,7 +396,7 @@
     }
   }
 
-  // Removed hardcoded default messages - admin should create messages manually
+
 
   function closeSettings() {
     isOpen = false

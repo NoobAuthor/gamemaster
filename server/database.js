@@ -309,11 +309,7 @@ class GameDatabase {
       }
     }
 
-    // Don't initialize default hints - let admin create them manually
-    // const hints = await this.all('SELECT COUNT(*) as count FROM hints')
-    // if (hints[0].count === 0) {
-    //   console.log('💡 No default hints will be initialized - admin can create them manually')
-    // }
+    // Don't initialize default hints - let admin create them manually if needed
   }
 
   // Promisified database operations

@@ -45,21 +45,17 @@
       
       console.log('✅ Mensajes cargados para sala', room.id)
       
-      // Don't automatically initialize default messages - let admin decide
-      // if ((roomMessages[currentLanguage] || []).length === 0) {
-      //   await initializeDefaultMessages()
-      // }
+      // Don't auto-initialize default messages - let admin create them manually if needed
     } catch (error) {
       console.error('❌ Error cargando mensajes:', error)
-      // Don't fallback to default messages - start with empty
+      // Initialize empty messages instead of hardcoded defaults
       roomMessages = {}
     } finally {
       loadingMessages = false
     }
   }
 
-  // Removed hardcoded default message initialization 
-  // Admin should create messages manually through settings
+
 
   function sendMessage(message: string) {
     if (!message.trim()) {
@@ -165,7 +161,7 @@
     text-align: center;
   }
 
-  .last-message h4 {
+  .predefined-messages h4, .last-message h4 {
     margin-bottom: 1rem;
     color: #00d4ff;
     font-size: 1rem;
