@@ -45,14 +45,14 @@
       
       console.log('✅ Mensajes cargados para sala', room.id)
       
-      // If no messages exist, initialize with default messages
-      if ((roomMessages[currentLanguage] || []).length === 0) {
-        await initializeDefaultMessages()
-      }
+      // Don't automatically initialize default messages - let admin decide
+      // if ((roomMessages[currentLanguage] || []).length === 0) {
+      //   await initializeDefaultMessages()
+      // }
     } catch (error) {
       console.error('❌ Error cargando mensajes:', error)
-      // Fallback to default messages
-      roomMessages = getDefaultMessages()
+      // Don't fallback to default messages - start with empty
+      roomMessages = {}
     } finally {
       loadingMessages = false
     }
