@@ -689,6 +689,10 @@
     font-size: 1rem;
     transition: all 0.3s ease;
     margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .send-hint-btn:hover:not(:disabled) {

@@ -76,7 +76,7 @@
   select {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     color: white;
     padding: 0.5rem;
     font-size: 0.9rem;
