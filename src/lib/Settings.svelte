@@ -913,13 +913,21 @@
     }
   }
 
-  async function deleteLanguage(languageCode: string) {
+  let showDeleteLanguageModal = false
+  let languageToDelete: { code: string, name: string } | null = null
+
+  function confirmDeleteLanguage(languageCode: string, languageName: string) {
     console.log('🌐 Attempting to delete language:', languageCode)
-    if (!confirm(`¿Estás seguro de que quieres eliminar este idioma? Esto eliminará todas las pistas y mensajes asociados.`)) return
+    languageToDelete = { code: languageCode, name: languageName }
+    showDeleteLanguageModal = true
+  }
+
+  async function deleteLanguage() {
+    if (!languageToDelete) return
 
     try {
       isLoading = true
-      await apiDeleteLanguage(languageCode)
+      await apiDeleteLanguage(languageToDelete.code)
         await loadSystemLanguages()
         if (activeTab === 'hints') await loadHints()
         if (activeTab === 'messages') await loadRoomMessages()
@@ -930,7 +938,14 @@
       toast.error('No se pudo eliminar el idioma')
     } finally {
       isLoading = false
+      showDeleteLanguageModal = false
+      languageToDelete = null
     }
+  }
+
+  function cancelDeleteLanguage() {
+    showDeleteLanguageModal = false
+    languageToDelete = null
   }
 
   // Function to notify other components that languages have changed

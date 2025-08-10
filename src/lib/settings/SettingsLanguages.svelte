@@ -3,6 +3,7 @@
   import { config } from '../config'
   import { getLanguages, createLanguage, updateLanguage, deleteLanguage } from '../api'
   import { toast } from '../toast'
+  import Modal from '../Modal.svelte'
 
   const dispatch = createEventDispatcher()
 
@@ -88,11 +89,21 @@
     }
   }
 
-  async function removeLanguage(code: string) {
-    if (!confirm('¿Eliminar este idioma? Se eliminarán pistas y mensajes asociados.')) return
+  // Delete confirmation modal state
+  let showDeleteModal = false
+  let languageToDelete: { code: string, name: string, flag?: string } | null = null
+
+  function confirmDeleteLanguage(code: string, name: string, flag?: string) {
+    languageToDelete = { code, name, flag }
+    showDeleteModal = true
+  }
+
+  async function removeLanguage() {
+    if (!languageToDelete) return
+    
     try {
       isLoading = true
-      await deleteLanguage(code)
+      await deleteLanguage(languageToDelete.code)
       await load()
       toast.success('Idioma eliminado')
       dispatch('languages-changed')
@@ -100,7 +111,14 @@
       toast.error('No se pudo eliminar el idioma')
     } finally {
       isLoading = false
+      showDeleteModal = false
+      languageToDelete = null
     }
+  }
+
+  function cancelDelete() {
+    showDeleteModal = false
+    languageToDelete = null
   }
 
   // Flag selector helpers
@@ -202,7 +220,7 @@
               <span class="btn-icon edit-icon"></span>
               Editar
             </button>
-            <button class="delete-btn" on:click={() => removeLanguage(language.code)} disabled={$config.obligatoryLanguages.includes(language.code)}>
+            <button class="delete-btn" on:click={() => confirmDeleteLanguage(language.code, language.name, language.flag)} disabled={$config.obligatoryLanguages.includes(language.code)}>
               <span class="btn-icon delete-icon"></span>
               Eliminar
             </button>
@@ -265,5 +283,22 @@
     .form-actions { flex-direction: column; }
   }
 </style>
+
+<!-- Delete Confirmation Modal -->
+<Modal 
+  bind:isOpen={showDeleteModal}
+  title="Eliminar Idioma"
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  on:confirm={removeLanguage}
+  on:cancel={cancelDelete}
+>
+  <p>¿Estás seguro de que quieres eliminar este idioma?</p>
+  {#if languageToDelete}
+    <p><strong>{languageToDelete.flag || ''} {languageToDelete.name} ({languageToDelete.code})</strong></p>
+  {/if}
+  <p><strong>Advertencia:</strong> Se eliminarán todas las pistas y mensajes asociados a este idioma.</p>
+  <p>Esta acción no se puede deshacer.</p>
+</Modal>
 
 
