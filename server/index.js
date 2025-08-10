@@ -713,7 +713,7 @@ app.get('/api/chromecast-status/:roomId', (req, res) => {
     const isCasting = castingClients > 0
     
     res.json({
-      connected: hasTvWindow > 0,
+      connected: isCasting,
       casting: isCasting,
       castingClients: castingClients,
       roomId: roomId,
