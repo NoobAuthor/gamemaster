@@ -1,0 +1,2413 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Game Master - Vista TV</title>
+
+        <!-- Inter Font -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Google Cast API intentionally disabled to enforce Chrome Mirroring flow -->
+
+        <style>
+            /* CSS Variables - Design System */
+            :root {
+                /* Background Colors */
+                --primary-bg: linear-gradient(
+                    135deg,
+                    #0a0e27 0%,
+                    #1a1f3a 50%,
+                    #2d3561 100%
+                );
+                --surface-bg: rgba(255, 255, 255, 0.05);
+                --glass-bg: rgba(255, 255, 255, 0.08);
+                --card-bg: rgba(255, 255, 255, 0.1);
+
+                /* Text Colors */
+                --text-primary: #ffffff;
+                --text-secondary: #b8c5d6;
+                --text-muted: #8892b0;
+                --text-accent: #64d9ff;
+
+                /* Accent Colors */
+                --accent-blue: #64d9ff;
+                --accent-purple: #9d7cff;
+                --accent-green: #4ade80;
+                --accent-orange: #ff8c42;
+                --accent-red: #ff5757;
+                --accent-yellow: #ffa502;
+
+                /* Gradients */
+                --gradient-primary: linear-gradient(
+                    135deg,
+                    #64d9ff 0%,
+                    #9d7cff 100%
+                );
+                --gradient-accent: linear-gradient(
+                    135deg,
+                    #9d7cff 0%,
+                    #64d9ff 100%
+                );
+                --gradient-card: linear-gradient(
+                    135deg,
+                    rgba(255, 255, 255, 0.12) 0%,
+                    rgba(255, 255, 255, 0.08) 100%
+                );
+
+                /* Shadows */
+                --shadow-sm:
+                    0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+                --shadow-md:
+                    0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+                --shadow-lg:
+                    0 10px 15px rgba(0, 0, 0, 0.1),
+                    0 4px 6px rgba(0, 0, 0, 0.05);
+                --shadow-glow: 0 0 20px rgba(100, 217, 255, 0.15);
+
+                /* Border Radius */
+                --radius-sm: 0.375rem;
+                --radius-md: 0.5rem;
+                --radius-lg: 0.75rem;
+                --radius-xl: 1rem;
+
+                /* Spacing */
+                --space-xs: 0.25rem;
+                --space-sm: 0.5rem;
+                --space-md: 0.75rem;
+                --space-lg: 1rem;
+                --space-xl: 1.5rem;
+                --space-2xl: 2rem;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                background: var(--primary-bg);
+                color: var(--text-primary);
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                position: relative;
+            }
+
+            /* Animated background pattern */
+            body::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background:
+                    radial-gradient(
+                        circle at 20% 80%,
+                        rgba(100, 217, 255, 0.08) 0%,
+                        transparent 50%
+                    ),
+                    radial-gradient(
+                        circle at 80% 20%,
+                        rgba(157, 124, 255, 0.08) 0%,
+                        transparent 50%
+                    ),
+                    radial-gradient(
+                        circle at 40% 40%,
+                        rgba(74, 222, 128, 0.05) 0%,
+                        transparent 50%
+                    );
+                animation: backgroundShift 20s ease-in-out infinite;
+                pointer-events: none;
+            }
+
+            @keyframes backgroundShift {
+                0%,
+                100% {
+                    transform: translate(0, 0) scale(1);
+                }
+                33% {
+                    transform: translate(-10px, -10px) scale(1.02);
+                }
+                66% {
+                    transform: translate(10px, 10px) scale(0.98);
+                }
+            }
+
+            .tv-container {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                position: relative;
+                z-index: 1;
+            }
+
+            .tv-header {
+                background: var(--glass-bg);
+                backdrop-filter: blur(20px);
+                padding: var(--space-2xl);
+                text-align: center;
+                border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+                box-shadow: var(--shadow-md);
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: var(--space-md);
+            }
+
+            .tv-header::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--gradient-card);
+                opacity: 0.6;
+                pointer-events: none;
+            }
+
+            .tv-header h1 {
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin-bottom: 0;
+                background: var(--gradient-primary);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                position: relative;
+                z-index: 1;
+                letter-spacing: -0.025em;
+            }
+
+            .casting-status {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--space-sm);
+                margin-top: 0;
+                position: relative;
+                z-index: 1;
+            }
+
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--accent-red);
+                box-shadow: 0 0 8px var(--accent-red);
+                transition: all 0.3s ease;
+            }
+
+            .status-dot.connected {
+                background: var(--accent-green);
+                box-shadow: 0 0 12px var(--accent-green);
+                animation: pulse 2s infinite;
+            }
+
+            .status-text {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--text-secondary);
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+                transition: color 0.3s ease;
+            }
+
+            .status-dot.connected + .status-text {
+                color: var(--accent-green);
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.1);
+                    opacity: 0.8;
+                }
+            }
+
+            .room-info {
+                font-size: 1.125rem;
+                color: var(--text-secondary);
+                font-weight: 500;
+                position: relative;
+                z-index: 1;
+            }
+
+            .main-display {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                padding: var(--space-2xl);
+            }
+
+            .timer-display {
+                text-align: center;
+                position: relative;
+                background: var(--glass-bg);
+                backdrop-filter: blur(15px);
+                border-radius: var(--radius-xl);
+                padding: var(--space-2xl);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .time-text {
+                font-family: "Inter", monospace;
+                font-size: 8rem;
+                font-weight: 800;
+                margin-bottom: var(--space-2xl);
+                transition: all 0.3s ease;
+                letter-spacing: -0.02em;
+                position: relative;
+            }
+
+            /* TV optimized styles for better visibility when cast */
+            @media screen and (min-width: 1280px) {
+                .time-text {
+                    font-size: 10rem;
+                    text-shadow:
+                        0 0 30px currentColor,
+                        0 4px 8px rgba(0, 0, 0, 0.3);
+                }
+
+                .tv-header h1 {
+                    font-size: 3.5rem;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+                }
+
+                .room-info {
+                    font-size: 1.5rem;
+                }
+
+                .hints-display {
+                    transform: scale(1.2);
+                    margin: var(--space-xl) 0;
+                }
+
+                .notification-overlay {
+                    top: 10%;
+                    left: 5%;
+                    right: 5%;
+                    padding: var(--space-2xl) var(--space-2xl);
+                }
+
+                .notification-header {
+                    font-size: 3rem;
+                }
+
+                .notification-content {
+                    font-size: 2rem;
+                    line-height: 1.4;
+                }
+            }
+
+            .time-low {
+                color: var(--accent-red);
+                text-shadow: 0 0 30px var(--accent-red);
+                animation: pulseGlow 2s infinite;
+            }
+
+            .time-warning {
+                color: var(--accent-orange);
+                text-shadow: 0 0 25px var(--accent-orange);
+            }
+
+            .time-normal {
+                color: var(--accent-blue);
+                text-shadow: 0 0 20px var(--accent-blue);
+            }
+
+            @keyframes pulseGlow {
+                0%,
+                100% {
+                    opacity: 1;
+                    transform: scale(1);
+                    text-shadow:
+                        0 0 30px currentColor,
+                        0 0 60px currentColor;
+                }
+                50% {
+                    opacity: 0.8;
+                    transform: scale(1.02);
+                    text-shadow:
+                        0 0 40px currentColor,
+                        0 0 80px currentColor;
+                }
+            }
+
+            .status-bar {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-size: 1.5rem;
+                margin-top: var(--space-lg);
+            }
+
+            .hints-display {
+                display: flex;
+                align-items: center;
+                gap: var(--space-md);
+                background: var(--surface-bg);
+                padding: var(--space-md) var(--space-lg);
+                border-radius: var(--radius-lg);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .hint-icon {
+                font-size: 1.25rem;
+                margin-right: var(--space-sm);
+            }
+
+            .hint-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                background: var(--accent-green);
+                border: 2px solid rgba(255, 255, 255, 0.8);
+                transition: all 0.3s ease;
+                box-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+            }
+
+            .hint-dot.used {
+                background: rgba(255, 255, 255, 0.15);
+                border-color: rgba(255, 255, 255, 0.3);
+                box-shadow: none;
+            }
+
+            .hint-dot.penalty {
+                border-color: var(--accent-orange);
+                box-shadow: 0 0 6px rgba(255, 140, 66, 0.4);
+            }
+
+            .footer-bar {
+                background: var(--glass-bg);
+                backdrop-filter: blur(20px);
+                padding: var(--space-xl) var(--space-2xl);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-top: 1px solid rgba(255, 255, 255, 0.15);
+                box-shadow: var(--shadow-md);
+                position: relative;
+            }
+
+            .sound-toggle {
+                position: absolute;
+                right: var(--space-2xl);
+                top: 50%;
+                transform: translateY(-50%);
+                background: var(--glass-bg);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: var(--radius-md);
+                padding: var(--space-sm);
+                color: var(--text-primary);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-size: 1.25rem;
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(10px);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .sound-toggle:hover {
+                background: rgba(100, 217, 255, 0.1);
+                border-color: var(--accent-blue);
+                transform: translateY(-50%) scale(1.05);
+                box-shadow: var(--shadow-md);
+            }
+
+            .sound-toggle.muted {
+                background: rgba(255, 87, 87, 0.1);
+                border-color: var(--accent-red);
+                color: var(--accent-red);
+            }
+
+            .sound-toggle.muted:hover {
+                background: rgba(255, 87, 87, 0.2);
+            }
+
+            .cast-button {
+                position: absolute;
+                right: calc(
+                    var(--space-2xl) + 60px
+                ); /* Position left of sound button */
+                top: 50%;
+                transform: translateY(-50%);
+                background: var(--glass-bg);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: var(--radius-md);
+                padding: var(--space-sm);
+                color: var(--text-primary);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-size: 1.25rem;
+                width: 44px;
+                height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                backdrop-filter: blur(10px);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .cast-button:hover {
+                background: rgba(100, 217, 255, 0.1);
+                border-color: var(--accent-blue);
+                transform: translateY(-50%) scale(1.05);
+                box-shadow: var(--shadow-md);
+            }
+
+            .cast-button.casting {
+                background: rgba(76, 222, 128, 0.1);
+                border-color: var(--accent-green);
+                color: var(--accent-green);
+                box-shadow: 0 0 15px rgba(76, 222, 128, 0.3);
+                animation: mirroringPulse 2s infinite;
+            }
+
+            .cast-button.casting:hover {
+                background: rgba(76, 222, 128, 0.2);
+            }
+
+            @keyframes mirroringPulse {
+                0%,
+                100% {
+                    box-shadow: 0 0 15px rgba(76, 222, 128, 0.3);
+                }
+                50% {
+                    box-shadow: 0 0 25px rgba(76, 222, 128, 0.5);
+                }
+            }
+
+            /* Indicate Chrome Mirroring is active */
+            .tv-container.casting-active::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                border: 3px solid var(--accent-green);
+                border-radius: var(--radius-lg);
+                pointer-events: none;
+                z-index: 999;
+                animation: mirroringBorder 3s infinite;
+            }
+
+            @keyframes mirroringBorder {
+                0%,
+                100% {
+                    border-color: var(--accent-green);
+                    opacity: 0.6;
+                }
+                50% {
+                    border-color: var(--accent-blue);
+                    opacity: 0.8;
+                }
+            }
+
+            .connection-status {
+                display: flex;
+                align-items: center;
+                gap: var(--space-md);
+                font-size: 1rem;
+                font-weight: 500;
+                background: var(--surface-bg);
+                padding: var(--space-sm) var(--space-lg);
+                border-radius: var(--radius-md);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .connection-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--accent-green);
+                animation: connectionBlink 2s infinite;
+                box-shadow: 0 0 8px currentColor;
+            }
+
+            .connection-dot.disconnected {
+                background: var(--accent-red);
+                animation: none;
+            }
+
+            @keyframes connectionBlink {
+                0%,
+                50% {
+                    opacity: 1;
+                }
+                51%,
+                100% {
+                    opacity: 0.4;
+                }
+            }
+
+            .last-message {
+                max-width: 60%;
+                text-align: center;
+            }
+
+            .message-text {
+                font-size: 1.125rem;
+                font-style: italic;
+                font-weight: 500;
+                color: var(--text-primary);
+                background: var(--glass-bg);
+                padding: var(--space-lg) var(--space-xl);
+                border-radius: var(--radius-lg);
+                border: 1px solid var(--accent-blue);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 0 20px rgba(100, 217, 255, 0.15);
+            }
+
+            .time-up-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(255, 87, 87, 0.95);
+                backdrop-filter: blur(8px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                animation: timeUpPulse 1.5s infinite;
+            }
+
+            .time-up-text {
+                font-size: 6rem;
+                font-weight: 800;
+                text-align: center;
+                color: var(--text-primary);
+                text-shadow: 0 0 40px rgba(255, 255, 255, 0.8);
+                background: var(--glass-bg);
+                padding: var(--space-2xl);
+                border-radius: var(--radius-xl);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                backdrop-filter: blur(10px);
+            }
+
+            @keyframes timeUpPulse {
+                0%,
+                100% {
+                    opacity: 0.95;
+                    transform: scale(1);
+                }
+                50% {
+                    opacity: 1;
+                    transform: scale(1.02);
+                }
+            }
+
+            .loading-screen {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--primary-bg);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                z-index: 2000;
+            }
+
+            .loading-spinner {
+                width: 60px;
+                height: 60px;
+                border: 4px solid rgba(255, 255, 255, 0.1);
+                border-left: 4px solid var(--accent-blue);
+                border-top: 4px solid var(--accent-purple);
+                border-radius: 50%;
+                animation: modernSpin 1.5s linear infinite;
+                margin-bottom: var(--space-2xl);
+            }
+
+            @keyframes modernSpin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .loading-text {
+                font-size: 1.5rem;
+                font-weight: 600;
+                background: var(--gradient-primary);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            /* Notification overlay for hints and messages */
+            .notification-overlay {
+                position: fixed;
+                top: 15%;
+                left: 10%;
+                right: 10%;
+                background: var(--gradient-card);
+                backdrop-filter: blur(20px);
+                border: 2px solid var(--accent-blue);
+                border-radius: var(--radius-xl);
+                padding: var(--space-2xl);
+                text-align: center;
+                z-index: 1500;
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow:
+                    var(--shadow-lg),
+                    0 0 40px rgba(100, 217, 255, 0.2);
+            }
+
+            .notification-overlay.show {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            .notification-overlay.hint {
+                border-color: var(--accent-yellow);
+                box-shadow:
+                    var(--shadow-lg),
+                    0 0 40px rgba(255, 165, 2, 0.2);
+            }
+
+            .notification-overlay.quick-message {
+                border-color: var(--accent-green);
+                box-shadow:
+                    var(--shadow-lg),
+                    0 0 40px rgba(74, 222, 128, 0.2);
+            }
+
+            .notification-header {
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin-bottom: var(--space-lg);
+                background: var(--gradient-primary);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .notification-overlay.hint .notification-header {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent-yellow) 0%,
+                    var(--accent-orange) 100%
+                );
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .notification-overlay.quick-message .notification-header {
+                background: linear-gradient(
+                    135deg,
+                    var(--accent-green) 0%,
+                    var(--accent-blue) 100%
+                );
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .notification-content {
+                font-size: 1.6rem;
+                line-height: 1.5;
+                color: var(--text-primary);
+                font-weight: 600;
+                letter-spacing: 0.01em;
+            }
+
+            /* Make hint text extra large on TV for readability */
+            .notification-overlay.hint .notification-content {
+                font-size: 2.2rem;
+                line-height: 1.45;
+            }
+
+            .notification-close {
+                position: absolute;
+                top: var(--space-lg);
+                right: var(--space-lg);
+                font-size: 1.25rem;
+                color: var(--text-muted);
+                cursor: pointer;
+                background: var(--surface-bg);
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+            }
+
+            .notification-close:hover {
+                background: var(--card-bg);
+                color: var(--text-primary);
+                transform: scale(1.1);
+            }
+        </style>
+    </head>
+    <body>
+        <div class="tv-container">
+            <!-- Pantalla de carga -->
+            <div class="loading-screen" id="loadingScreen">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Conectando al Game Master...</div>
+            </div>
+
+            <!-- Contenido principal -->
+            <header class="tv-header">
+                <h1 id="roomTitle">Sala 1</h1>
+                <!-- Casting status hidden to reduce clutter on TV view -->
+            </header>
+
+            <main class="main-display">
+                <!-- Overlay de tiempo agotado -->
+                <div
+                    class="time-up-overlay"
+                    id="timeUpOverlay"
+                    style="display: none"
+                >
+                    <div class="time-up-text">
+                        ¡TIEMPO<br />
+                        AGOTADO!
+                    </div>
+                </div>
+
+                <!-- Notification overlay for hints and messages -->
+                <div class="notification-overlay" id="notificationOverlay">
+                    <div
+                        class="notification-close"
+                        onclick="hideNotification()"
+                    >
+                        ✕
+                    </div>
+                    <div class="notification-header" id="notificationHeader">
+                        🧩 NUEVA PISTA
+                    </div>
+                    <div
+                        class="notification-content"
+                        id="notificationContent"
+                    ></div>
+                </div>
+
+                <div class="timer-display">
+                    <div class="time-text" id="timeDisplay">60:00</div>
+                    <div class="status-bar">
+                        <div class="hints-display" id="hintsDisplay">
+                            <span class="hint-icon">🧩</span>
+                            <!-- Los puntos de pistas se generarán dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <footer class="footer-bar">
+                <div class="connection-status">
+                    <div class="connection-dot" id="connectionDot"></div>
+                    <span id="connectionText">Conectado</span>
+                </div>
+                <div class="last-message" id="lastMessage">
+                    <!-- El último mensaje se mostrará aquí -->
+                </div>
+                <button
+                    class="sound-toggle"
+                    id="soundToggle"
+                    onclick="toggleSound()"
+                    title="Activar/Desactivar sonido"
+                >
+                    <span id="soundIcon">🔊</span>
+                </button>
+                <button
+                    class="cast-button"
+                    id="castButton"
+                    onclick="toggleCast()"
+                    title="Chrome Mirroring - Mostrar en TV"
+                >
+                    <span id="castIcon">📺</span>
+                </button>
+            </footer>
+        </div>
+
+        <script type="module">
+            import { io } from "https://cdn.socket.io/4.7.0/socket.io.esm.min.js";
+
+            // Obtener parámetros de URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = parseInt(urlParams.get("room")) || 0;
+            const isReceiver = urlParams.get("mode") === "receiver";
+
+            // Elementos del DOM
+            const loadingScreen = document.getElementById("loadingScreen");
+            const roomTitle = document.getElementById("roomTitle");
+            const timeDisplay = document.getElementById("timeDisplay");
+            const hintsDisplay = document.getElementById("hintsDisplay");
+            const connectionDot = document.getElementById("connectionDot");
+            const connectionText = document.getElementById("connectionText");
+            const lastMessage = document.getElementById("lastMessage");
+            const timeUpOverlay = document.getElementById("timeUpOverlay");
+            const notificationOverlay = document.getElementById(
+                "notificationOverlay",
+            );
+            const notificationHeader =
+                document.getElementById("notificationHeader");
+            const notificationContent = document.getElementById(
+                "notificationContent",
+            );
+            const castButtonEl = document.getElementById("castButton");
+
+            // Configurar conexión Socket.IO
+            const SERVER_URL =
+                window.location.protocol +
+                "//" +
+                window.location.hostname +
+                ":3001";
+            const socket = io(SERVER_URL);
+
+            let currentRoom = null;
+
+            // Configurar información de la sala inicial
+            roomTitle.textContent = `Sala ${roomId + 1}`;
+
+            // Funciones de utilidad
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = seconds % 60;
+                return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+            }
+
+            function updateTimeDisplay(timeRemaining, isRunning) {
+                timeDisplay.textContent = formatTime(timeRemaining);
+
+                // Cambiar color según el tiempo restante
+                timeDisplay.className = "time-text";
+                if (timeRemaining <= 0) {
+                    timeDisplay.classList.add("time-low");
+                    timeUpOverlay.style.display = "flex";
+                } else if (timeRemaining < 300) {
+                    // 5 minutos
+                    timeDisplay.classList.add("time-low");
+                    timeUpOverlay.style.display = "none";
+                } else if (timeRemaining < 900) {
+                    // 15 minutos
+                    timeDisplay.classList.add("time-warning");
+                    timeUpOverlay.style.display = "none";
+                } else {
+                    timeDisplay.classList.add("time-normal");
+                    timeUpOverlay.style.display = "none";
+                }
+            }
+
+            function updateHintsDisplay(hintsRemaining, freeHintsCount = 3) {
+                hintsDisplay.innerHTML = '<span class="hint-icon">🧩</span>';
+
+                // Usar el número original de pistas gratuitas como base para mostrar
+                const maxHintsToShow = Math.max(freeHintsCount, hintsRemaining);
+                const hintsToDisplay = Math.min(maxHintsToShow, 7); // Máximo 7 para no sobrecargar la pantalla
+
+                for (let i = 0; i < hintsToDisplay; i++) {
+                    const dot = document.createElement("div");
+                    dot.className = "hint-dot";
+
+                    // Las pistas usadas se marcan como 'used'
+                    if (i >= hintsRemaining) {
+                        dot.classList.add("used");
+                    }
+
+                    // Marcar las pistas gratuitas con un estilo especial
+                    if (i < freeHintsCount) {
+                        dot.style.borderColor = "var(--accent-green)"; // Verde para pistas gratuitas
+                    } else {
+                        dot.classList.add("penalty");
+                        dot.style.borderColor = "var(--accent-orange)"; // Naranja para pistas con penalización
+                    }
+
+                    hintsDisplay.appendChild(dot);
+                }
+
+                // Si hay más pistas que las mostradas, agregar contador
+                if (hintsRemaining > hintsToDisplay) {
+                    const counter = document.createElement("span");
+                    counter.textContent = `+${hintsRemaining - hintsToDisplay}`;
+                    counter.style.marginLeft = "0.5rem";
+                    counter.style.fontSize = "1.5rem";
+                    hintsDisplay.appendChild(counter);
+                }
+            }
+
+            function updateLastMessage(message) {
+                if (message && message.trim()) {
+                    lastMessage.innerHTML = `<div class="message-text">"${message}"</div>`;
+                } else {
+                    lastMessage.innerHTML = "";
+                }
+            }
+
+            function updateConnectionStatus(connected) {
+                connectionDot.className = "connection-dot";
+                if (connected) {
+                    connectionText.textContent = "Conectado";
+                } else {
+                    connectionDot.classList.add("disconnected");
+                    connectionText.textContent = "Desconectado";
+                }
+            }
+
+            function updateRoomData(room) {
+                if (room && room.id === roomId) {
+                    currentRoom = room;
+
+                    // Update room name
+                    if (room.name) {
+                        roomTitle.textContent = room.name;
+                    }
+
+                    updateTimeDisplay(room.timeRemaining, room.isRunning);
+                    updateHintsDisplay(
+                        room.hintsRemaining,
+                        room.freeHintsCount || 3,
+                    );
+                    updateLastMessage(room.lastMessage);
+                }
+            }
+
+            // Notification system functions
+            function showNotification(type, content, title) {
+                // Try enabling audio whenever we show a notification (works on receiver, harmless on sender)
+                enableAudio();
+                notificationOverlay.className = `notification-overlay ${type}`;
+                notificationHeader.textContent = title;
+                notificationContent.textContent = content;
+
+                // Show notification
+                setTimeout(() => {
+                    notificationOverlay.classList.add("show");
+                }, 100);
+
+                // Auto-hide after 8 seconds
+                setTimeout(() => {
+                    hideNotification();
+                }, 8000);
+            }
+
+            function hideNotification() {
+                notificationOverlay.classList.remove("show");
+            }
+
+            function showHint(hintText, timePenaltyApplied = false) {
+                const title = timePenaltyApplied
+                    ? "🧩 PISTA (-2 min)"
+                    : "🧩 NUEVA PISTA";
+                showNotification("hint", hintText, title);
+                playHintSound();
+            }
+
+            function showQuickMessage(message) {
+                showNotification(
+                    "quick-message",
+                    message,
+                    "💬 MENSAJE DEL GAME MASTER",
+                );
+                playMessageSound();
+            }
+
+            // Sound generation and playback functions
+            let audioContext = null;
+            let soundEnabled = true;
+
+            function initAudioContext() {
+                if (!audioContext) {
+                    try {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (error) {
+                        console.warn("❌ Web Audio API not supported:", error);
+                        soundEnabled = false;
+                        return;
+                    }
+                }
+                // Attempt to resume immediately (works on Chromecast receiver)
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().catch(() => {});
+                }
+            }
+
+            function createBeepSound(
+                frequency = 800,
+                duration = 0.3,
+                volume = 0.3,
+                type = "sine",
+            ) {
+                if (!soundEnabled || !audioContext) return;
+
+                try {
+                    // Create oscillator and gain nodes
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    // Connect nodes
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    // Configure oscillator
+                    oscillator.frequency.setValueAtTime(
+                        frequency,
+                        audioContext.currentTime,
+                    );
+                    oscillator.type = type;
+
+                    // Configure gain (volume envelope)
+                    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(
+                        volume,
+                        audioContext.currentTime + 0.01,
+                    );
+                    gainNode.gain.exponentialRampToValueAtTime(
+                        0.001,
+                        audioContext.currentTime + duration,
+                    );
+
+                    // Start and stop the sound
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + duration);
+
+                    // Clean up
+                    oscillator.onended = () => {
+                        oscillator.disconnect();
+                        gainNode.disconnect();
+                    };
+                } catch (error) {
+                    console.warn("❌ Error playing sound:", error);
+                }
+            }
+
+            function playHintSound() {
+                initAudioContext();
+                if (!soundEnabled || !audioContext) return;
+
+                // Play a pleasant two-tone chime for hints
+                // Higher frequency first tone
+                createBeepSound(880, 0.15, 0.3, "sine");
+
+                // Lower frequency second tone with slight delay
+                setTimeout(() => {
+                    createBeepSound(660, 0.25, 0.4, "sine");
+                }, 120);
+
+                console.log("🔊 Playing hint notification sound");
+            }
+
+            function playMessageSound() {
+                initAudioContext();
+                if (!soundEnabled || !audioContext) return;
+
+                // Play a softer single tone for messages
+                createBeepSound(523, 0.2, 0.25, "triangle");
+
+                console.log("🔊 Playing message notification sound");
+            }
+
+            // Initialize audio context on first user interaction
+            function enableAudio() {
+                initAudioContext();
+                if (audioContext) {
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            console.log('🔊 Audio context resumed');
+                        }).catch(() => {});
+                    }
+                    // Perform a very low-volume, inaudible unlock beep to ensure graph is warm
+                    try {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        gain.gain.value = 0.00001;
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.start();
+                        setTimeout(() => { osc.stop(); osc.disconnect(); gain.disconnect(); }, 30);
+                    } catch (_) {}
+                }
+            }
+
+            // Add click listener to enable audio (required for autoplay policy)
+            document.addEventListener("click", enableAudio, { once: true });
+            document.addEventListener("touchstart", enableAudio, { once: true });
+            document.addEventListener("pointerdown", enableAudio, { once: true });
+            document.addEventListener("keydown", enableAudio, { once: true });
+
+            // Sound toggle functionality
+            function toggleSound() {
+                soundEnabled = !soundEnabled;
+                const soundToggle = document.getElementById("soundToggle");
+                const soundIcon = document.getElementById("soundIcon");
+
+                if (soundEnabled) {
+                    soundToggle.classList.remove("muted");
+                    soundIcon.textContent = "🔊";
+                    soundToggle.title = "Desactivar sonido";
+                    console.log("🔊 Sound notifications enabled");
+
+                    // Play a test sound to confirm
+                    initAudioContext();
+                    if (audioContext) {
+                        createBeepSound(523, 0.1, 0.2, "sine");
+                    }
+                } else {
+                    soundToggle.classList.add("muted");
+                    soundIcon.textContent = "🔇";
+                    soundToggle.title = "Activar sonido";
+                    console.log("🔇 Sound notifications disabled");
+                }
+
+                // Save preference to localStorage
+                localStorage.setItem("tvSoundEnabled", soundEnabled);
+            }
+
+            // Load sound preference from localStorage
+            function loadSoundPreference() {
+                const saved = localStorage.getItem("tvSoundEnabled");
+                if (saved !== null) {
+                    soundEnabled = saved === "true";
+                    const soundToggle = document.getElementById("soundToggle");
+                    const soundIcon = document.getElementById("soundIcon");
+
+                    if (!soundEnabled) {
+                        soundToggle.classList.add("muted");
+                        soundIcon.textContent = "🔇";
+                        soundToggle.title = "Activar sonido";
+                    }
+                }
+            }
+
+            // Initialize sound preference on load
+            loadSoundPreference();
+
+            // Make toggleSound globally accessible
+            window.toggleSound = toggleSound;
+
+            // Chrome Mirroring and Cast API integration
+            let castContext = null;
+            let currentSession = null;
+            let isCasting = false;
+            let presentationRequest = null;
+            let presentationConnection = null;
+
+            // Namespace for custom CAF receiver messaging
+            const CAST_NAMESPACE = "urn:x-cast:com.gamemaster.control";
+
+            function getCastAppId() {
+                // Prefer explicit URL param, else localStorage, else placeholder
+                const fromUrl = urlParams.get("castAppId");
+                if (fromUrl) return fromUrl;
+                const saved = localStorage.getItem("gm_cast_app_id");
+                return saved || "CC1AD845"; // Replace in settings with your Custom Receiver ID for best quality
+            }
+
+            function setCastAppId(appId) {
+                localStorage.setItem("gm_cast_app_id", appId);
+            }
+
+            function initializeCastApi() {
+                // Initialize Chrome's native casting capabilities first
+                initializePresentationAPI();
+
+                window["__onGCastApiAvailable"] = function (isAvailable) {
+                    if (isAvailable) {
+                        console.log("🎭 Google Cast API available");
+
+                        // Initialize Cast context optimized for Chrome Mirroring
+                        cast.framework.CastContext.getInstance().setOptions({
+                            receiverApplicationId: getCastAppId(),
+                            autoJoinPolicy:
+                                chrome.cast.AutoJoinPolicy
+                                    .TAB_AND_ORIGIN_SCOPED, // Better for mirroring
+                            language: "es",
+                            resumeSavedSession: true,
+                        });
+
+                        castContext = cast.framework.CastContext.getInstance();
+
+                        // Listen for cast state changes
+                        castContext.addEventListener(
+                            cast.framework.CastContextEventType
+                                .CAST_STATE_CHANGED,
+                            onCastStateChanged,
+                        );
+
+                        // Listen for session state changes
+                        castContext.addEventListener(
+                            cast.framework.CastContextEventType
+                                .SESSION_STATE_CHANGED,
+                            onSessionStateChanged,
+                        );
+
+                        // Update initial state
+                        updateCastButton();
+                        updateCastingStatus();
+                    } else {
+                        console.warn(
+                            "⚠️ Google Cast API not available, using Presentation API only",
+                        );
+                    }
+                };
+            }
+
+            // Send instruction to the CAF receiver to load this room
+            function sendCastLoadRoom() {
+                try {
+                    const session = castContext && castContext.getCurrentSession();
+                    if (!session) return false;
+                    const payload = {
+                        type: "LOAD_ROOM",
+                        roomId: roomId,
+                        serverUrl:
+                            window.location.protocol + "//" + window.location.host,
+                    };
+                    session.sendMessage(CAST_NAMESPACE, payload,
+                        () => console.log("📡 LOAD_ROOM sent"),
+                        (e) => console.warn("⚠️ sendMessage error", e),
+                    );
+                    return true;
+                } catch (e) {
+                    console.warn("⚠️ Failed to send LOAD_ROOM:", e);
+                    return false;
+                }
+            }
+
+            function requestCastAndLoad() {
+                if (!castContext) {
+                    console.warn("Google Cast context not available");
+                    return;
+                }
+                castContext.requestSession().then(
+                    () => {
+                        updateCastButton();
+                        sendCastLoadRoom();
+                        showCastSuccessMessage();
+                    },
+                    (err) => {
+                        console.warn("❌ Cast session request failed", err);
+                    },
+                );
+            }
+
+            // Chrome Presentation API for better mirroring support
+            function initializePresentationAPI() {
+                if (
+                    "presentation" in navigator &&
+                    "PresentationRequest" in window
+                ) {
+                    try {
+                        // Create presentation request for current page
+                        presentationRequest = new PresentationRequest([
+                            window.location.href,
+                        ]);
+
+                        // Listen for available displays
+                        presentationRequest.addEventListener(
+                            "connectionavailable",
+                            (event) => {
+                                presentationConnection = event.connection;
+                                console.log(
+                                    "🎭 Presentation connection available:",
+                                    presentationConnection.id,
+                                );
+
+                                presentationConnection.addEventListener(
+                                    "connect",
+                                    () => {
+                                        console.log(
+                                            "🎭 Presentation connected",
+                                        );
+                                        isCasting = true;
+                                        updateCastButton();
+                                        updateCastingStatus();
+                                        showCastSuccessMessage();
+                                    },
+                                );
+
+                                presentationConnection.addEventListener(
+                                    "close",
+                                    () => {
+                                        console.log(
+                                            "🎭 Presentation disconnected",
+                                        );
+                                        isCasting = false;
+                                        presentationConnection = null;
+                                        updateCastButton();
+                                        updateCastingStatus();
+                                    },
+                                );
+
+                                presentationConnection.addEventListener(
+                                    "terminate",
+                                    () => {
+                                        console.log(
+                                            "🎭 Presentation terminated",
+                                        );
+                                        isCasting = false;
+                                        presentationConnection = null;
+                                        updateCastButton();
+                                        updateCastingStatus();
+                                    },
+                                );
+                            },
+                        );
+
+                        console.log("🎭 Presentation API initialized");
+                    } catch (error) {
+                        console.warn(
+                            "⚠️ Presentation API not supported:",
+                            error,
+                        );
+                    }
+                } else {
+                    console.warn("⚠️ Presentation API not available");
+                }
+            }
+
+            function onCastStateChanged(event) {
+                console.log("🎭 Cast state changed:", event.castState);
+                updateCastButton();
+                updateCastingStatus();
+            }
+
+            function onSessionStateChanged(event) {
+                console.log("🎭 Session state changed:", event.sessionState);
+                currentSession = castContext.getCurrentSession();
+
+                // Handle session events
+                if (currentSession) {
+                    // Listen for media session updates
+                    currentSession.addMediaListener((media) => {
+                        console.log(
+                            "🎬 Media session updated:",
+                            media.media.contentId,
+                        );
+                        updateCastingStatus();
+                    });
+
+                    // Listen for session updates
+                    currentSession.addUpdateListener((isAlive) => {
+                        console.log("🔄 Session update - alive:", isAlive);
+                        if (!isAlive) {
+                            currentSession = null;
+                        }
+                        updateCastButton();
+                        updateCastingStatus();
+                    });
+                }
+
+                updateCastButton();
+                updateCastingStatus();
+            }
+
+            // Enhanced casting detection with additional event listeners
+            function initializeCastingDetection() {
+                // Listen for visibility changes that might indicate casting
+                document.addEventListener("visibilitychange", () => {
+                    console.log(
+                        "📺 Visibility changed:",
+                        document.visibilityState,
+                    );
+                    setTimeout(updateCastingStatus, 500); // Delay to allow state changes
+                });
+
+                // Listen for resize events that might indicate casting
+                window.addEventListener("resize", () => {
+                    console.log(
+                        "📺 Window resized:",
+                        window.innerWidth,
+                        "x",
+                        window.innerHeight,
+                    );
+                    setTimeout(updateCastingStatus, 500);
+                });
+
+                // Listen for media query changes for presentation mode
+                if (window.matchMedia) {
+                    const presentationQuery = window.matchMedia(
+                        "(display-mode: presentation)",
+                    );
+                    presentationQuery.addListener((e) => {
+                        console.log("📺 Presentation mode changed:", e.matches);
+                        updateCastingStatus();
+                    });
+                }
+
+                // Periodic check for casting status changes
+                setInterval(() => {
+                    updateCastingStatus();
+                }, 5000); // Check every 5 seconds
+            }
+
+            function updateCastButton() {
+                const castButton = document.getElementById("castButton");
+                const castIcon = document.getElementById("castIcon");
+                const tvContainer = document.querySelector(".tv-container");
+
+                // Check both Presentation API and Google Cast API states
+                const isPresentationActive = presentationConnection !== null;
+                const isGoogleCastActive =
+                    castContext &&
+                    castContext.getCastState() ===
+                        cast.framework.CastState.CONNECTED;
+
+                if (isPresentationActive || isGoogleCastActive) {
+                    isCasting = true;
+                    castButton.classList.add("casting");
+                    castIcon.textContent = "🔗";
+                    castButton.title = "Desconectar Chrome Mirroring";
+
+                    // Add visual indicator that we're casting
+                    if (
+                        tvContainer &&
+                        !tvContainer.classList.contains("casting-active")
+                    ) {
+                        tvContainer.classList.add("casting-active");
+                        showCastingIndicator();
+                    }
+                } else if (
+                    castContext &&
+                    castContext.getCastState() ===
+                        cast.framework.CastState.CONNECTING
+                ) {
+                    isCasting = false;
+                    castButton.classList.remove("casting");
+                    castIcon.textContent = "⏳";
+                    castButton.title = "Conectando Chrome Mirroring...";
+
+                    // Remove casting indicator
+                    if (tvContainer) {
+                        tvContainer.classList.remove("casting-active");
+                        hideCastingIndicator();
+                    }
+                } else {
+                    isCasting = false;
+                    castButton.classList.remove("casting");
+                    castIcon.textContent = "📺";
+                    castButton.title = "Chrome Mirroring - Mostrar en TV";
+
+                    // Remove casting indicator
+                    if (tvContainer) {
+                        tvContainer.classList.remove("casting-active");
+                        hideCastingIndicator();
+                    }
+                }
+            }
+
+            function showCastingIndicator() {
+                // Add a subtle border to indicate casting is active
+                const indicator = document.createElement("div");
+                indicator.id = "casting-indicator";
+                indicator.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--accent-green), var(--accent-blue), var(--accent-green));
+        background-size: 200% 100%;
+        animation: shimmer 2s linear infinite;
+        z-index: 9999;
+      `;
+                document.body.appendChild(indicator);
+
+                // Add shimmer animation
+                const style = document.createElement("style");
+                style.textContent = `
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+      `;
+                document.head.appendChild(style);
+            }
+
+            function hideCastingIndicator() {
+                const indicator = document.getElementById("casting-indicator");
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+
+            function updateCastingStatus() {
+                // Report casting status to server for Game Master display
+                if (castContext) {
+                    const castState = castContext.getCastState();
+                    const isConnected =
+                        castState === cast.framework.CastState.CONNECTED;
+
+                    // Enhanced casting detection:
+                    // 1. Google Cast API sessions (currentSession exists)
+                    // 2. Native Chrome tab mirroring (connected state without API session)
+                    // 3. Presentation API connections (presentationConnection exists)
+                    // 4. Document visibility changes (potential indicator of casting)
+                    const hasApiSession = isConnected && currentSession;
+                    const hasNativeCasting = isConnected && !currentSession; // Native Chrome casting
+                    const hasPresentationConnection =
+                        presentationConnection !== null;
+
+                    // Additional detection for native Chrome casting
+                    const hasVisibilityChanges =
+                        document.visibilityState === "visible" &&
+                        window.screen &&
+                        window.screen.width !== window.innerWidth;
+
+                    // Check for media query changes that might indicate casting
+                    const hasCastingMediaQuery =
+                        window.matchMedia &&
+                        window.matchMedia("(display-mode: presentation)")
+                            .matches;
+
+                    const isCastingNow =
+                        hasApiSession ||
+                        hasNativeCasting ||
+                        hasPresentationConnection ||
+                        hasCastingMediaQuery;
+
+                    // Update global state
+                    isCasting = isCastingNow;
+
+                    // Emit casting status to server
+                    socket.emit("cast-status-update", {
+                        roomId: roomId,
+                        isCasting: isCastingNow,
+                        timestamp: new Date().toISOString(),
+                    });
+
+                    console.log(
+                        `📺 Casting status updated: ${isCastingNow ? "Casting" : "Not casting"} (State: ${castState}, Session: ${currentSession ? "Yes" : "No"}, Presentation: ${hasPresentationConnection ? "Yes" : "No"}, MediaQuery: ${hasCastingMediaQuery ? "Yes" : "No"})`,
+                    );
+
+                    // Update visual indicator
+                    updateCastingStatusIndicator(isCastingNow);
+                } else {
+                    // Fallback detection when castContext is not available
+                    const hasPresentationConnection =
+                        presentationConnection !== null;
+                    const hasCastingMediaQuery =
+                        window.matchMedia &&
+                        window.matchMedia("(display-mode: presentation)")
+                            .matches;
+
+                    const isCastingNow =
+                        hasPresentationConnection || hasCastingMediaQuery;
+
+                    if (isCasting !== isCastingNow) {
+                        isCasting = isCastingNow;
+
+                        socket.emit("cast-status-update", {
+                            roomId: roomId,
+                            isCasting: isCastingNow,
+                            timestamp: new Date().toISOString(),
+                        });
+
+                        console.log(
+                            `📺 Fallback casting status: ${isCastingNow ? "Casting" : "Not casting"} (Presentation: ${hasPresentationConnection ? "Yes" : "No"}, MediaQuery: ${hasCastingMediaQuery ? "Yes" : "No"})`,
+                        );
+
+                        // Update visual indicator
+                        updateCastingStatusIndicator(isCastingNow);
+                    }
+                }
+            }
+
+            function updateCastingStatusIndicator(isConnected) {
+                const statusDot = document.getElementById("castingStatusDot");
+                const statusText = document.getElementById("castingStatusText");
+
+                if (statusDot && statusText) {
+                    if (isConnected) {
+                        statusDot.classList.add("connected");
+                        statusText.textContent = "Chrome Cast Conectado";
+                    } else {
+                        statusDot.classList.remove("connected");
+                        statusText.textContent = "Chrome Cast Desconectado";
+                    }
+                }
+            }
+
+            function castCurrentPage() {
+                if (!currentSession) {
+                    console.error("❌ No active cast session");
+                    return;
+                }
+
+                // Method 1: Try to use Chrome's presentation API for web content
+                try {
+                    // First, try to send a message to the receiver to load our URL
+                    const message = {
+                        type: "LOAD_URL",
+                        url: window.location.href,
+                        title: `Game Master - ${roomTitle.textContent}`,
+                        autoPlay: true,
+                    };
+
+                    currentSession.sendMessage(
+                        "urn:x-cast:com.google.cast.media",
+                        message,
+                        () => {
+                            console.log(
+                                "🎭 URL load message sent successfully",
+                            );
+                            updateCastingStatus();
+                            showCastSuccessMessage();
+                        },
+                        (error) => {
+                            console.log(
+                                "ℹ️ Direct message failed, trying media loading...",
+                            );
+                            attemptMediaCasting();
+                        },
+                    );
+                } catch (error) {
+                    console.log(
+                        "ℹ️ Message API not available, trying media loading...",
+                    );
+                    attemptMediaCasting();
+                }
+            }
+
+            function attemptMediaCasting() {
+                try {
+                    // Create a simple media request that Chrome Cast can handle
+                    const mediaInfo = new chrome.cast.media.MediaInfo(
+                        window.location.href,
+                        "text/html",
+                    );
+                    mediaInfo.metadata =
+                        new chrome.cast.media.GenericMediaMetadata();
+                    mediaInfo.metadata.title = `Game Master - ${roomTitle.textContent}`;
+                    mediaInfo.metadata.subtitle = "Escape Room Control";
+
+                    const request = new chrome.cast.media.LoadRequest(
+                        mediaInfo,
+                    );
+                    request.autoplay = true;
+
+                    console.log("🎭 Attempting media casting...");
+
+                    currentSession.loadMedia(request).then(
+                        () => {
+                            console.log("🎭 Media casting successful");
+                            updateCastingStatus();
+                            showCastSuccessMessage();
+                        },
+                        (error) => {
+                            console.log(
+                                "ℹ️ Media casting failed, showing manual instructions",
+                            );
+                            showManualCastInstructions();
+                            updateCastingStatus(); // Still report as connected
+                        },
+                    );
+                } catch (error) {
+                    console.log(
+                        "ℹ️ All automated methods failed, showing manual instructions",
+                    );
+                    showManualCastInstructions();
+                    updateCastingStatus();
+                }
+            }
+
+            function showCastSuccessMessage() {
+                const notification = document.createElement("div");
+                notification.style.cssText = `
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(74, 222, 128, 0.9); color: white; padding: 16px 24px;
+        border-radius: 8px; z-index: 10000; font-size: 14px; text-align: center;
+        backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      `;
+                notification.innerHTML = `
+        ✅ Contenido enviado a Chrome Cast<br>
+        <small>El contenido debería aparecer en tu TV en unos segundos</small>
+      `;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 5000);
+            }
+
+            function showManualCastInstructions() {
+                const notification = document.createElement("div");
+                notification.style.cssText = `
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(255, 140, 66, 0.9); color: white; padding: 20px 24px;
+        border-radius: 8px; z-index: 10000; font-size: 14px; text-align: center;
+        backdrop-filter: blur(10px); box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        max-width: 400px; line-height: 1.4;
+      `;
+                notification.innerHTML = `
+        📺 Chrome Cast conectado<br><br>
+        <strong>Para mostrar el contenido en TV:</strong><br>
+        1. Haz clic en ⋮ (menú de Chrome)<br>
+        2. Selecciona "Enviar..."<br>
+        3. Elige "Enviar pestaña"<br>
+        4. Selecciona tu Chrome Cast<br><br>
+        <button onclick="this.parentElement.remove()"
+          style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.5); color: white; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 8px;">
+          Entendido
+        </button>
+      `;
+                document.body.appendChild(notification);
+
+                // Auto-remove after 15 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 15000);
+            }
+
+            function toggleCast() {
+                // Disconnect if already mirroring
+                if (presentationConnection) {
+                    try { presentationConnection.terminate(); } catch (_) {}
+                    presentationConnection = null;
+                    isCasting = false;
+                    updateCastButton();
+                    updateCastingStatus();
+                    return;
+                }
+
+                // Prefer Chrome Mirroring via Presentation API
+                if (presentationRequest) {
+                    presentationRequest.start().then((connection) => {
+                        presentationConnection = connection;
+                        isCasting = true;
+                        updateCastButton();
+                        updateCastingStatus();
+                        showCastSuccessMessage();
+                    }).catch((err) => {
+                        console.warn('❌ Presentation start failed', err);
+                        showChromeMirroringInstructions();
+                    });
+                    return;
+                }
+
+                // Final fallback: show manual mirroring instructions
+                showChromeMirroringInstructions();
+            }
+
+            function fallbackToGoogleCast() {
+                if (!castContext) {
+                    // No Google Cast available, show manual instructions
+                    showChromeMirroringInstructions();
+                    return;
+                }
+
+                const castState = castContext.getCastState();
+
+                if (castState === cast.framework.CastState.CONNECTED) {
+                    // Disconnect from current session
+                    currentSession = castContext.getCurrentSession();
+                    if (currentSession) {
+                        currentSession.endSession(true);
+                        console.log("🎭 Cast session ended");
+                    }
+                } else {
+                    // Try to request cast session
+                    castContext.requestSession().then(
+                        (session) => {
+                            console.log("🎭 Google Cast session started");
+                            currentSession = session;
+                            attemptTabMirroring();
+                        },
+                        (error) => {
+                            if (error.code !== "cancel") {
+                                console.log(
+                                    "ℹ️ Google Cast failed, showing manual instructions",
+                                );
+                            }
+                            showChromeMirroringInstructions();
+                        },
+                    );
+                }
+            }
+
+            function attemptTabMirroring() {
+                // Show instructions for Chrome's built-in tab casting
+                const modal = createModal(`
+        <div style="text-align: center;">
+          <h3 style="color: var(--accent-green); margin-bottom: 16px;">✅ Chrome Cast Conectado</h3>
+          <p style="margin-bottom: 20px; line-height: 1.5;">
+            <strong>¡Perfecto!</strong> Tu Chrome Cast está conectado.<br><br>
+            <strong>Para mostrar esta pantalla en tu TV:</strong>
+          </p>
+
+          <div style="background: rgba(100, 217, 255, 0.1); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 16px; margin-bottom: 20px; text-align: left;">
+            <h4 style="color: var(--accent-blue); margin-bottom: 12px; text-align: center;">📺 Método Recomendado</h4>
+            <div style="line-height: 1.6;">
+              <strong>1.</strong> Haz clic en el icono <strong>⋮</strong> (menú de Chrome)<br>
+              <strong>2.</strong> Selecciona <strong>"Enviar..."</strong> o <strong>"Cast..."</strong><br>
+              <strong>3.</strong> Tu Chrome Cast debería aparecer ya seleccionado<br>
+              <strong>4.</strong> Elige <strong>"Enviar pestaña"</strong><br>
+              <strong>5.</strong> ¡La pantalla aparecerá en tu TV!
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="this.closest('.modal-overlay').remove(); openChromecastMenu()"
+              style="background: var(--accent-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+              🚀 Abrir Menú de Chrome
+            </button>
+            <button onclick="this.closest('.modal-overlay').remove(); showDetailedSteps()"
+              style="background: var(--accent-green); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+              📋 Ver Pasos Detallados
+            </button>
+            <button onclick="this.closest('.modal-overlay').remove()"
+              style="background: var(--glass-bg); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      `);
+            }
+
+            function showCastNotAvailableMessage() {
+                const modal = createModal(`
+        <div style="text-align: center;">
+          <h3 style="color: var(--accent-orange); margin-bottom: 16px;">⚠️ Chrome Cast No Disponible</h3>
+          <p style="margin-bottom: 20px; line-height: 1.5;">
+            Para usar Chrome Cast necesitas:<br><br>
+            <strong>1.</strong> Navegador Google Chrome<br>
+            <strong>2.</strong> Misma red Wi-Fi que tu Chrome Cast<br>
+            <strong>3.</strong> Dispositivo Chrome Cast configurado<br><br>
+            <small style="color: var(--text-secondary);">
+              Alternativamente, puedes conectar tu laptop/PC directamente a la TV con un cable HDMI
+            </small>
+          </p>
+          <button onclick="this.closest('.modal-overlay').remove()"
+            style="background: var(--accent-blue); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+            Entendido
+          </button>
+        </div>
+      `);
+            }
+
+            function showChromeMirroringInstructions() {
+                const modal = createModal(`
+        <div style="text-align: center;">
+          <h3 style="color: var(--accent-blue); margin-bottom: 16px;">📺 Chrome Mirroring - Mostrar en TV</h3>
+
+          <div style="background: rgba(74, 222, 128, 0.1); border: 1px solid var(--accent-green); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-green); margin-bottom: 12px;">✅ Método Recomendado (Chrome Mirroring)</h4>
+            <div style="text-align: left; line-height: 1.6;">
+              <strong>1.</strong> Haz clic en el menú <strong>⋮</strong> de Chrome (esquina superior derecha)<br>
+              <strong>2.</strong> Selecciona <strong>"Enviar..."</strong> o <strong>"Cast..."</strong><br>
+              <strong>3.</strong> Elige tu dispositivo Chrome Cast de la lista<br>
+              <strong>4.</strong> <span style="color: var(--accent-green); font-weight: bold;">MUY IMPORTANTE:</span> Selecciona <strong>"Enviar pestaña"</strong><br>
+              <strong>5.</strong> La pantalla completa aparecerá en tu TV en tiempo real
+            </div>
+          </div>
+
+          <div style="background: rgba(255, 87, 87, 0.1); border: 1px solid var(--accent-red); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-red); margin-bottom: 12px;">⚠️ Evitar "Default Media Receiver"</h4>
+            <div style="text-align: left; line-height: 1.6;">
+              <strong>NO selecciones:</strong> "Enviar escritorio" o cualquier opción de media<br>
+              <strong>SÍ selecciona:</strong> <span style="color: var(--accent-green);">"Enviar pestaña"</span> para Chrome Mirroring completo<br>
+              <span style="font-size: 0.9em; color: var(--text-secondary);">Esto evita que aparezca "Default Media Receiver" y garantiza mirroring real</span>
+            </div>
+          </div>
+
+          <div style="background: rgba(100, 217, 255, 0.1); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-blue); margin-bottom: 12px;">🔧 Para Mejor Rendimiento</h4>
+            <ul style="text-align: left; margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li>Usa una conexión Wi-Fi fuerte y estable</li>
+              <li>Cierra pestañas innecesarias en Chrome</li>
+              <li>Asegúrate de que ambos dispositivos estén en la misma red</li>
+              <li>Utiliza modo pantalla completa (F11) para mejor visualización</li>
+            </ul>
+          </div>
+
+          <div style="background: rgba(255, 140, 66, 0.1); border: 1px solid var(--accent-orange); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-orange); margin-bottom: 12px;">⚡ Método Alternativo</h4>
+            <p style="line-height: 1.5;">
+              Si no tienes Chrome Cast, conecta tu computadora<br>
+              directamente a la TV usando un cable <strong>HDMI</strong>
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="this.closest('.modal-overlay').remove(); triggerChromeMenu()"
+              style="background: var(--accent-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+              🚀 Acceso Directo al Menú
+            </button>
+            <button onclick="this.closest('.modal-overlay').remove(); showDetailedSteps()"
+              style="background: var(--accent-green); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+              📋 Ver Pasos Detallados
+            </button>
+            <button onclick="this.closest('.modal-overlay').remove()"
+              style="background: var(--glass-bg); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+              Cerrar
+            </button>
+          </div>
+        </div>
+      `);
+            }
+
+            function triggerChromeMenu() {
+                // Use keyboard shortcut to open Chrome menu if possible
+                const shortcutModal = createModal(`
+        <div style="text-align: center;">
+          <h3 style="color: var(--accent-blue); margin-bottom: 16px;">⌨️ Acceso Rápido</h3>
+          <p style="margin-bottom: 20px; line-height: 1.5;">
+            Puedes abrir el menú de Chrome más rápido usando:
+          </p>
+
+          <div style="background: rgba(100, 217, 255, 0.1); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+            <div style="font-size: 2rem; margin-bottom: 12px;">⌨️</div>
+            <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 8px;">
+              <span style="background: var(--glass-bg); padding: 4px 8px; border-radius: 4px; margin: 0 4px;">Alt</span> +
+              <span style="background: var(--glass-bg); padding: 4px 8px; border-radius: 4px; margin: 0 4px;">F</span>
+            </div>
+            <div style="font-size: 0.9em; color: var(--text-secondary);">
+              O haz clic en los tres puntos <strong>⋮</strong> en la esquina superior derecha
+            </div>
+          </div>
+
+          <div style="background: rgba(74, 222, 128, 0.1); border: 1px solid var(--accent-green); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-green); margin-bottom: 8px;">📺 Luego selecciona:</h4>
+            <div style="font-weight: bold; font-size: 1.1em;">
+              "Enviar..." → Tu Chrome Cast → <span style="color: var(--accent-green);">"Enviar pestaña"</span>
+            </div>
+          </div>
+
+          <div style="text-align: center;">
+            <button onclick="this.closest('.modal-overlay').remove()"
+              style="background: var(--accent-blue); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+              ¡Entendido!
+            </button>
+          </div>
+        </div>
+      `);
+            }
+
+            function openChromecastMenu() {
+                // Legacy function - redirect to new trigger function
+                triggerChromeMenu();
+            }
+
+            function showFallbackInstructions() {
+                const modal = createModal(`
+        <div style="text-align: center;">
+          <h3 style="color: var(--accent-blue); margin-bottom: 16px;">🎯 Instrucciones Paso a Paso</h3>
+          <p style="margin-bottom: 20px; line-height: 1.5;">
+            Para activar Chrome Mirroring manualmente:
+          </p>
+
+          <div style="background: rgba(100, 217, 255, 0.1); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 20px; margin-bottom: 20px; text-align: left;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <span style="background: var(--accent-blue); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; font-size: 14px;">1</span>
+              <span><strong>Busca los tres puntos verticales (⋮)</strong> en la esquina superior derecha de Chrome</span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <span style="background: var(--accent-green); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; font-size: 14px;">2</span>
+              <span>Haz clic en el menú y busca <strong>"Enviar..."</strong> o <strong>"Cast..."</strong></span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <span style="background: var(--accent-purple); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; font-size: 14px;">3</span>
+              <span>Selecciona tu <strong>Chrome Cast</strong> de la lista de dispositivos</span>
+            </div>
+
+            <div style="display: flex; align-items: center;">
+              <span style="background: var(--accent-orange); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; font-size: 14px;">4</span>
+              <span>Elige <strong>"Enviar pestaña"</strong> para el mejor mirroring</span>
+            </div>
+          </div>
+
+          <div style="text-align: center;">
+            <button onclick="this.closest('.modal-overlay').remove()"
+              style="background: var(--accent-blue); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+              ¡Entendido!
+            </button>
+          </div>
+        </div>
+      `);
+            }
+
+            function createModal(content) {
+                const modal = document.createElement("div");
+                modal.className = "modal-overlay";
+                modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
+        align-items: center; justify-content: center; backdrop-filter: blur(5px);
+      `;
+                modal.innerHTML = `
+        <div style="background: var(--glass-bg); border-radius: 16px; padding: 32px; max-width: 600px; margin: 20px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(20px);">
+          ${content}
+        </div>
+      `;
+                document.body.appendChild(modal);
+                return modal;
+            }
+
+            function showDetailedSteps() {
+                const modal = createModal(`
+        <div>
+          <h3 style="color: var(--accent-blue); margin-bottom: 20px; text-align: center;">📺 Chrome Mirroring - Pasos Detallados</h3>
+
+          <div style="text-align: left; line-height: 1.8; margin-bottom: 20px;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <span style="background: var(--accent-blue); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold;">1</span>
+              <span>Busca el icono <strong>⋮</strong> (tres puntos verticales) en la esquina superior derecha de Chrome</span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <span style="background: var(--accent-green); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold;">2</span>
+              <span>Haz clic en el menú y busca la opción <strong>"Enviar..."</strong> o <strong>"Cast..."</strong></span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+              <span style="background: var(--accent-purple); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold;">3</span>
+              <span>Selecciona tu dispositivo Chrome Cast de la lista que aparece</span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 15px; padding: 12px; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--accent-green); border-radius: 8px;">
+              <span style="background: var(--accent-green); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold;">4</span>
+              <span><strong>MUY IMPORTANTE:</strong> Elige <strong>"Enviar pestaña"</strong> (NO "Enviar escritorio")</span>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 15px; padding: 12px; background: rgba(74, 222, 128, 0.1); border: 1px solid var(--accent-green); border-radius: 8px;">
+              <span style="background: var(--accent-green); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold;">✓</span>
+              <span><strong>¡Listo!</strong> Chrome Mirroring completo - no "Default Media Receiver"</span>
+            </div>
+          </div>
+
+          <div style="background: rgba(255, 87, 87, 0.1); border: 1px solid var(--accent-red); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-red); margin-bottom: 8px;">⚠️ Evitar "Default Media Receiver":</h4>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li><strong>NO selecciones:</strong> "Enviar escritorio" - esto muestra aplicaciones del escritorio</li>
+              <li><strong>NO selecciones:</strong> Opciones de medios/videos - estas usan el receiver por defecto</li>
+              <li><strong>SÍ selecciona:</strong> <span style="color: var(--accent-green);">"Enviar pestaña"</span> - esto hace Chrome Mirroring real</li>
+            </ul>
+          </div>
+
+          <div style="background: rgba(255, 140, 66, 0.1); border: 1px solid var(--accent-orange); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <h4 style="color: var(--accent-orange); margin-bottom: 8px;">💡 Consejos para mejor experiencia:</h4>
+            <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+              <li>Asegúrate de que tu Chrome Cast y computadora estén en la misma red Wi-Fi</li>
+              <li>Si no ves tu Chrome Cast, verifica que esté encendido y configurado</li>
+              <li>Para mejor calidad, usa una conexión Wi-Fi estable</li>
+              <li>Presiona F11 para pantalla completa antes de enviar la pestaña</li>
+            </ul>
+          </div>
+
+          <div style="text-align: center;">
+            <button onclick="this.closest('.modal-overlay').remove()"
+              style="background: var(--accent-blue); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+              Entendido
+            </button>
+          </div>
+        </div>
+      `);
+            }
+
+            function attemptDirectCast() {
+                console.log("🎭 Attempting direct cast...");
+
+                if (!castContext) {
+                    showCastNotAvailableMessage();
+                    return;
+                }
+
+                // Show realistic expectations
+                const modal = createModal(`
+        <div style="text-align: center;">
+          <h3 style="color: var(--accent-orange); margin-bottom: 16px;">🔄 Conexión Automática</h3>
+          <p style="margin-bottom: 20px; line-height: 1.5;">
+            <strong>Nota importante:</strong> La conexión automática funciona para establecer la conexión con tu Chrome Cast,
+            pero es posible que el contenido no aparezca automáticamente en la TV.<br><br>
+            <strong>Si esto sucede, usa el método manual recomendado.</strong>
+          </p>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button onclick="this.closest('.modal-overlay').remove(); performDirectCast()"
+              style="background: var(--accent-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+              Continuar
+            </button>
+            <button onclick="this.closest('.modal-overlay').remove()"
+              style="background: var(--glass-bg); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      `);
+            }
+
+            function performDirectCast() {
+                // Request cast session
+                castContext.requestSession().then(
+                    (session) => {
+                        console.log("🎭 Cast session started successfully");
+                        currentSession = session;
+
+                        // Show realistic success message
+                        const modal = createModal(`
+            <div style="text-align: center;">
+              <h3 style="color: var(--accent-green); margin-bottom: 16px;">✅ Conectado a Chrome Cast</h3>
+              <p style="margin-bottom: 20px; line-height: 1.5;">
+                <strong>Chrome Cast conectado exitosamente!</strong><br><br>
+                Si no ves el contenido en tu TV después de unos segundos,
+                usa el <strong>método manual recomendado</strong>:
+              </p>
+
+              <div style="background: rgba(100, 217, 255, 0.1); border: 1px solid var(--accent-blue); border-radius: 8px; padding: 16px; margin-bottom: 20px; text-align: left;">
+                <strong>1.</strong> Menú Chrome <strong>⋮</strong> → <strong>"Enviar..."</strong><br>
+                <strong>2.</strong> Selecciona tu Chrome Cast<br>
+                <strong>3.</strong> Elige <strong>"Enviar pestaña"</strong>
+              </div>
+
+              <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="this.closest('.modal-overlay').remove(); showDetailedSteps()"
+                  style="background: var(--accent-blue); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+                  Ver Pasos Detallados
+                </button>
+                <button onclick="this.closest('.modal-overlay').remove()"
+                  style="background: var(--glass-bg); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; cursor: pointer;">
+                  Entendido
+                </button>
+              </div>
+            </div>
+          `);
+
+                        // Try to cast the current page (this usually doesn't work reliably)
+                        setTimeout(() => {
+                            castCurrentPage();
+                        }, 1000);
+                    },
+                    (error) => {
+                        console.error("❌ Error starting cast session:", error);
+                        let errorMessage = "Error al conectar con Chrome Cast";
+
+                        if (error.code === "cancel") {
+                            console.log("ℹ️ User cancelled cast session");
+                            return; // Don't show error if user cancelled
+                        } else if (
+                            error.message &&
+                            error.message.includes("No devices found")
+                        ) {
+                            errorMessage =
+                                "No se encontraron dispositivos Chrome Cast.\n\nVerifica que:\n• Tu Chrome Cast esté encendido\n• Esté en la misma red Wi-Fi\n• Esté configurado correctamente";
+                        }
+
+                        const modal = createModal(`
+            <div style="text-align: center;">
+              <h3 style="color: var(--accent-red); margin-bottom: 16px;">❌ Error de Conexión</h3>
+              <p style="margin-bottom: 20px; line-height: 1.5;">
+                ${errorMessage}
+              </p>
+              <button onclick="this.closest('.modal-overlay').remove()"
+                style="background: var(--accent-blue); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                Entendido
+              </button>
+            </div>
+          `);
+                    },
+                );
+            }
+
+            // Make functions globally accessible
+            window.toggleCast = toggleCast;
+
+            // Do not initialize Google Cast API on the sender page.
+            // We intentionally rely on Chrome Mirroring (Cast tab) for TV display.
+            if (isReceiver && castButtonEl) {
+                castButtonEl.style.display = "none";
+            }
+
+            // Initialize enhanced casting detection
+            if (!isReceiver) {
+                initializeCastingDetection();
+                // Try to pre-initialize Presentation API early for smoother mirroring UX
+                initializePresentationAPI();
+            }
+
+            // Debug function for testing casting status
+            window.testCastingStatus = function () {
+                console.log("🧪 Testing casting status detection...");
+                updateCastingStatus();
+                return {
+                    castContext: !!castContext,
+                    currentSession: !!currentSession,
+                    presentationConnection: !!presentationConnection,
+                    isCasting: isCasting,
+                    castState: castContext
+                        ? castContext.getCastState()
+                        : "No castContext",
+                    visibilityState: document.visibilityState,
+                    displayMode: window.matchMedia
+                        ? window.matchMedia("(display-mode: presentation)")
+                              .matches
+                        : "No matchMedia",
+                };
+            };
+
+            // Manual casting status override for testing
+            window.forceCastingStatus = function (status) {
+                console.log(`🔧 Forcing casting status to: ${status}`);
+                socket.emit("cast-status-update", {
+                    roomId: roomId,
+                    isCasting: status,
+                    timestamp: new Date().toISOString(),
+                });
+                return `Casting status forced to: ${status}`;
+            };
+
+            // Fetch initial room data
+            async function fetchInitialRoomData() {
+                try {
+                    const response = await fetch(
+                        `${SERVER_URL}/api/rooms/${roomId}`,
+                    );
+                    if (response.ok) {
+                        const room = await response.json();
+                        updateRoomData(room);
+                        console.log("📊 Room data loaded:", room);
+                    }
+                } catch (error) {
+                    console.error("❌ Error fetching room data:", error);
+                }
+            }
+
+            // Event listeners de Socket.IO
+            socket.on("connect", () => {
+                console.log("✅ Conectado al servidor");
+                updateConnectionStatus(true);
+                loadingScreen.style.display = "none";
+
+                // Join the TV room for Chrome Cast status tracking
+                socket.emit("join-tv-room", roomId);
+                console.log(`📺 Chrome Cast TV joined room ${roomId}`);
+
+                // Fetch current room data when connected
+                fetchInitialRoomData();
+            });
+
+            socket.on("disconnect", () => {
+                console.log("❌ Desconectado del servidor");
+                updateConnectionStatus(false);
+                loadingScreen.style.display = "flex";
+                loadingScreen.querySelector(".loading-text").textContent =
+                    "Reconectando...";
+            });
+
+            socket.on("reconnect", () => {
+                console.log("🔄 Reconectado al servidor");
+                updateConnectionStatus(true);
+                loadingScreen.style.display = "none";
+
+                // Re-fetch room data after reconnection
+                fetchInitialRoomData();
+            });
+
+            socket.on("initial-state", (gameState) => {
+                console.log("📊 Estado inicial recibido");
+                const room = gameState.rooms.find((r) => r.id === roomId);
+                if (room) {
+                    updateRoomData(room);
+                }
+            });
+
+            socket.on("room-updated", (room) => {
+                updateRoomData(room);
+            });
+
+            socket.on("time-sync", (data) => {
+                if (data.roomId === roomId) {
+                    updateTimeDisplay(data.timeRemaining, data.isRunning);
+                }
+            });
+
+            socket.on("hint-sent", (data) => {
+                if (data.roomId === roomId) {
+                    console.log("💡 Pista recibida:", data.hint);
+                    showHint(data.hint, data.timePenaltyApplied);
+                }
+            });
+
+            socket.on("message-sent", (data) => {
+                if (data.roomId === roomId) {
+                    console.log("💬 Mensaje recibido:", data.message);
+                    updateLastMessage(data.message);
+
+                    // Show notification for quick messages
+                    if (data.isQuickMessage) {
+                        showQuickMessage(data.message);
+                    }
+                }
+            });
+
+            socket.on("room-reset", (resetRoomId) => {
+                if (resetRoomId === roomId) {
+                    console.log("🔄 Sala reiniciada");
+
+                    // Reset all visual states
+                    timeUpOverlay.style.display = "none";
+
+                    // Clear last message
+                    updateLastMessage("");
+
+                    // Fetch fresh room data to ensure sync
+                    fetchInitialRoomData();
+
+                    console.log("✅ Chrome Cast window reset completed");
+                }
+            });
+
+            // Global function for notification close button
+            window.hideNotification = hideNotification;
+
+            // Inicializar conexión
+            socket.connect();
+        </script>
+
+        <!-- Audio elements for sound notifications -->
+        <audio id="hintSound" preload="auto" volume="0.7">
+            <!-- Pleasant notification sound for hints (base64 encoded) -->
+        </audio>
+
+        <audio id="messageSound" preload="auto" volume="0.5">
+            <!-- Softer sound for messages (base64 encoded) -->
+        </audio>
+    </body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Master Receiver</title>
+    <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000;
+        color: #fff;
+        font-family: system-ui, -apple-system, Segoe UI, Inter, sans-serif;
+      }
+      #frame {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      #status {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="status">Esperando datos del remitente…</div>
+    <iframe id="frame" allowfullscreen></iframe>
+    <script>
+      // Namespace for sender <-> receiver messages
+      const NAMESPACE = 'urn:x-cast:com.gamemaster.control';
+
+      const context = cast.framework.CastReceiverContext.getInstance();
+      const messageBus = context.getCastMessageBus(NAMESPACE);
+      const statusEl = document.getElementById('status');
+      const frame = document.getElementById('frame');
+
+      function setStatus(text) {
+        try { statusEl.textContent = text; } catch (_) {}
+      }
+
+      function loadRoom({ roomId, serverUrl }) {
+        // Build the URL that renders the TV UI. We reuse the existing tv.html
+        // and put it into receiver mode to disable sender-only features.
+        const base = serverUrl || (location.origin);
+        const tvUrl = `${base}/tv.html?room=${encodeURIComponent(roomId)}&mode=receiver`;
+        frame.src = tvUrl;
+        setStatus(`Cargando sala ${roomId + 1}…`);
+      }
+
+      messageBus.onMessage = (event) => {
+        try {
+          const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          if (data && data.type === 'LOAD_ROOM') {
+            loadRoom(data);
+            setStatus('');
+          }
+        } catch (e) {
+          setStatus('Error al procesar el mensaje del remitente');
+        }
+      };
+
+      // Start receiver (no media player needed)
+      context.start();
+
+      setStatus('Listo. Esperando conexión…');
+    </script>
+  </body>
+  </html>
+
+
