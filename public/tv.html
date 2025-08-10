@@ -1468,10 +1468,13 @@
                     });
                 }
 
-                // Periodic check for casting status changes
+                // Periodic check for casting status changes (make it more responsive)
                 setInterval(() => {
                     updateCastingStatus();
-                }, 5000); // Check every 5 seconds
+                }, 2000);
+
+                // Initial check shortly after load
+                setTimeout(() => updateCastingStatus(), 300);
             }
 
             function updateCastButton() {
@@ -1566,40 +1569,66 @@
 
             function updateCastingStatus() {
                 // Report casting status to server for Game Master display
+                let isCastingNow = false;
+                let detectionMethod = "none";
+
+                // Method 1: Check Google Cast API state
                 if (castContext) {
                     const castState = castContext.getCastState();
-                    const isConnected =
-                        castState === cast.framework.CastState.CONNECTED;
+                    const isConnected = castState === cast.framework.CastState.CONNECTED;
+                    
+                    if (isConnected) {
+                        isCastingNow = true;
+                        detectionMethod = currentSession ? "cast-api-session" : "cast-api-connected";
+                    }
+                }
 
-                    // Enhanced casting detection:
-                    // 1. Google Cast API sessions (currentSession exists)
-                    // 2. Native Chrome tab mirroring (connected state without API session)
-                    // 3. Presentation API connections (presentationConnection exists)
-                    // 4. Document visibility changes (potential indicator of casting)
-                    const hasApiSession = isConnected && currentSession;
-                    const hasNativeCasting = isConnected && !currentSession; // Native Chrome casting
-                    const hasPresentationConnection =
-                        presentationConnection !== null;
+                // Method 2: Check for Presentation API connections (Chrome tab casting)
+                if (!isCastingNow && presentationConnection !== null) {
+                    isCastingNow = true;
+                    detectionMethod = "presentation-api";
+                }
 
-                    // Additional detection for native Chrome casting
-                    const hasVisibilityChanges =
-                        document.visibilityState === "visible" &&
-                        window.screen &&
-                        window.screen.width !== window.innerWidth;
+                // Method 3: Check for presentation display mode (Chrome Cast receiver mode)
+                if (!isCastingNow && window.matchMedia && window.matchMedia("(display-mode: presentation)").matches) {
+                    isCastingNow = true;
+                    detectionMethod = "presentation-mode";
+                }
 
-                    // Check for media query changes that might indicate casting
-                    const hasCastingMediaQuery =
-                        window.matchMedia &&
-                        window.matchMedia("(display-mode: presentation)")
-                            .matches;
+                // Method 4: Enhanced Chrome casting detection via user agent and window properties
+                if (!isCastingNow) {
+                    // Check if this is a Cast receiver environment
+                    const isCastReceiver = window.navigator.userAgent.includes('CrKey') || 
+                                         window.chrome?.cast?.receiver !== undefined ||
+                                         window.location.search.includes('chromecast') ||
+                                         window.location.search.includes('cast');
+                    
+                    // Check for screen mirroring indicators
+                    const hasScreenMirroring = window.screen && 
+                                              (window.screen.width > window.innerWidth * 1.5 || 
+                                               window.screen.height > window.innerHeight * 1.5);
+                    
+                    // Check for TV-like aspect ratios and resolutions
+                    const hasTvAspectRatio = window.innerWidth >= 1280 && window.innerHeight >= 720 &&
+                                           (Math.abs((window.innerWidth / window.innerHeight) - (16/9)) < 0.1);
+                    
+                    if (isCastReceiver || (hasScreenMirroring && hasTvAspectRatio)) {
+                        isCastingNow = true;
+                        detectionMethod = isCastReceiver ? "cast-receiver" : "screen-mirroring";
+                    }
+                }
 
-                    const isCastingNow =
-                        hasApiSession ||
-                        hasNativeCasting ||
-                        hasPresentationConnection ||
-                        hasCastingMediaQuery;
+                // Method 5: Document visibility and fullscreen detection
+                if (!isCastingNow && document.fullscreenElement) {
+                    // If in fullscreen on a TV-like display, likely casting
+                    if (window.innerWidth >= 1280 && window.innerHeight >= 720) {
+                        isCastingNow = true;
+                        detectionMethod = "fullscreen-tv";
+                    }
+                }
 
-                    // Update global state
+                // Only update if status changed to avoid spam
+                if (isCasting !== isCastingNow) {
                     isCasting = isCastingNow;
 
                     // Emit casting status to server
@@ -1607,42 +1636,24 @@
                         roomId: roomId,
                         isCasting: isCastingNow,
                         timestamp: new Date().toISOString(),
+                        detectionMethod: detectionMethod
                     });
 
                     console.log(
-                        `📺 Casting status updated: ${isCastingNow ? "Casting" : "Not casting"} (State: ${castState}, Session: ${currentSession ? "Yes" : "No"}, Presentation: ${hasPresentationConnection ? "Yes" : "No"}, MediaQuery: ${hasCastingMediaQuery ? "Yes" : "No"})`,
+                        `📺 Casting status changed: ${isCastingNow ? "Casting" : "Not casting"} via ${detectionMethod}`,
+                        {
+                            castState: castContext ? castContext.getCastState() : "no-context",
+                            currentSession: !!currentSession,
+                            presentationConnection: !!presentationConnection,
+                            presentationMode: window.matchMedia ? window.matchMedia("(display-mode: presentation)").matches : false,
+                            userAgent: window.navigator.userAgent.substring(0, 50) + "...",
+                            resolution: `${window.innerWidth}x${window.innerHeight}`,
+                            fullscreen: !!document.fullscreenElement
+                        }
                     );
 
                     // Update visual indicator
                     updateCastingStatusIndicator(isCastingNow);
-                } else {
-                    // Fallback detection when castContext is not available
-                    const hasPresentationConnection =
-                        presentationConnection !== null;
-                    const hasCastingMediaQuery =
-                        window.matchMedia &&
-                        window.matchMedia("(display-mode: presentation)")
-                            .matches;
-
-                    const isCastingNow =
-                        hasPresentationConnection || hasCastingMediaQuery;
-
-                    if (isCasting !== isCastingNow) {
-                        isCasting = isCastingNow;
-
-                        socket.emit("cast-status-update", {
-                            roomId: roomId,
-                            isCasting: isCastingNow,
-                            timestamp: new Date().toISOString(),
-                        });
-
-                        console.log(
-                            `📺 Fallback casting status: ${isCastingNow ? "Casting" : "Not casting"} (Presentation: ${hasPresentationConnection ? "Yes" : "No"}, MediaQuery: ${hasCastingMediaQuery ? "Yes" : "No"})`,
-                        );
-
-                        // Update visual indicator
-                        updateCastingStatusIndicator(isCastingNow);
-                    }
                 }
             }
 
@@ -2260,6 +2271,8 @@
                 initializeCastingDetection();
                 // Try to pre-initialize Presentation API early for smoother mirroring UX
                 initializePresentationAPI();
+                // Proactively push initial status
+                setTimeout(() => updateCastingStatus(), 300);
             }
 
             // Debug function for testing casting status
@@ -2321,6 +2334,12 @@
 
                 // Fetch current room data when connected
                 fetchInitialRoomData();
+                
+                // Immediately check and report casting status after connection
+                setTimeout(() => {
+                    updateCastingStatus();
+                    console.log("🔄 Initial casting status check completed");
+                }, 1000);
             });
 
             socket.on("disconnect", () => {

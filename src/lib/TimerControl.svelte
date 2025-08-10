@@ -10,10 +10,6 @@
   // Modal states
   let showCustomTimeModal = false
   let customMinutes = '60'
-  
-  // Chrome Cast status tracking
-  let isChromecastConnected = false
-  let chromecastCheckInterval: NodeJS.Timeout | undefined
 
   function toggleTimer() {
     room.isRunning = !room.isRunning
@@ -43,63 +39,6 @@
                  room.timeRemaining < 900 ? '#ffa502' : '#00d4ff'
   
   $: progressPercentage = (room.timeRemaining / (60 * 60)) * 100
-
-  // Chrome Cast detection functions
-  import { getChromecastStatus } from './api'
-  async function checkChromecastStatus() {
-    try {
-      const data = await getChromecastStatus(room.id)
-      isChromecastConnected = data.casting || data.connected || false
-      console.log(`📺 Chrome Cast status for room ${room.id}:`, isChromecastConnected ? 'Casting' : 'Not casting')
-    } catch (error) {
-      console.error('❌ Error checking Chrome Cast status:', error)
-      isChromecastConnected = false
-    }
-  }
-
-  // Initialize Chrome Cast monitoring
-  function startChromecastMonitoring() {
-    // Check status immediately
-    checkChromecastStatus()
-    
-    // Set up periodic checking every 3 seconds for responsive feedback
-    chromecastCheckInterval = setInterval(() => {
-      checkChromecastStatus()
-    }, 3000)
-  }
-
-  function stopChromecastMonitoring() {
-    if (chromecastCheckInterval) {
-      clearInterval(chromecastCheckInterval)
-    }
-  }
-
-  // Socket connection for real-time updates
-  import { socket } from './socket'
-  
-  // Lifecycle management
-  import { onMount, onDestroy } from 'svelte'
-  
-  onMount(() => {
-    startChromecastMonitoring()
-    
-    // Listen for real-time Chrome Cast status changes
-    socket.on('chromecast-status-change', handleChromecastStatusChange)
-  })
-  
-  onDestroy(() => {
-    stopChromecastMonitoring()
-    
-    // Clean up socket listeners
-    socket.off('chromecast-status-change', handleChromecastStatusChange)
-  })
-
-  function handleChromecastStatusChange(data: { roomId: number, connected: boolean, timestamp: string }) {
-    if (data.roomId === room.id) {
-      isChromecastConnected = data.connected
-      console.log(`📺 Chrome Cast status updated for room ${room.id}:`, data.connected ? 'Connected' : 'Disconnected')
-    }
-  }
 </script>
 
 <div class="timer-control">
@@ -145,19 +84,13 @@
     </button>
   </div>
 
-  <!-- Estado del Chrome Cast -->
-  <div class="chromecast-status">
-    <div class="status-indicator" class:active={isChromecastConnected}>
-      <span class="status-light" class:active={isChromecastConnected}></span>
-      {isChromecastConnected ? 'Chrome Cast Conectado' : 'Chrome Cast Desconectado'}
+  <!-- Time up indicator -->
+  {#if room.timeRemaining <= 0}
+    <div class="time-up">
+      <span class="btn-icon alert-icon"></span>
+      ¡TIEMPO AGOTADO!
     </div>
-    {#if room.timeRemaining <= 0}
-      <div class="time-up">
-        <span class="btn-icon alert-icon"></span>
-        ¡TIEMPO AGOTADO!
-      </div>
-    {/if}
-  </div>
+  {/if}
 </div>
 
 <!-- Custom Time Modal -->
@@ -407,48 +340,6 @@
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12,6 12,12 16,14'%3E%3C/polyline%3E%3C/svg%3E") center/contain no-repeat;
   }
 
-  .chromecast-status {
-    margin-top: var(--space-xl);
-    text-align: center;
-  }
-
-  .status-indicator {
-    background: var(--glass-bg);
-    padding: var(--space-md);
-    border-radius: var(--radius-lg);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: var(--space-sm);
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-md);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-    font-size: 0.875rem;
-  }
-
-  .status-indicator.active {
-    background: rgba(74, 222, 128, 0.15);
-    border-color: var(--accent-green);
-    color: var(--accent-green);
-  }
-
-  .status-light {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent-red);
-    transition: all 0.3s ease;
-  }
-
-  .status-light.active {
-    background: var(--accent-green);
-    box-shadow: 0 0 8px var(--accent-green);
-  }
-
   .time-up {
     background: rgba(255, 87, 87, 0.2);
     border: 1px solid var(--accent-red);
@@ -464,6 +355,7 @@
     text-transform: uppercase;
     letter-spacing: 0.025em;
     backdrop-filter: blur(10px);
+    margin-top: var(--space-xl);
   }
 
   .alert-icon {

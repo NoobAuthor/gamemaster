@@ -106,13 +106,19 @@ export async function getChromecastStatus(roomId: number) {
   // Some proxies may incorrectly return HTML; guard JSON parsing
   const text = await r.text()
   if (text.trim().startsWith('<')) throw new Error('Invalid response format')
-  return JSON.parse(text) as Promise<{
+  return JSON.parse(text) as {
     connected: boolean
     casting: boolean
     castingClients: number
+    tvWindows: number
+    castingDetails: Array<{
+      socketId: string
+      detectionMethod: string
+      lastUpdate: string
+    }>
     roomId: number
     timestamp: string
-  }>
+  }
 }
 
 // Categories

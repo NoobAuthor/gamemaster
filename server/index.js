@@ -701,21 +701,33 @@ app.get('/api/chromecast-status/:roomId', (req, res) => {
   try {
     const roomId = parseInt(req.params.roomId)
     
-    // Consider any open TV window as connected; flag 'casting' when explicitly reported
+    // Analyze all connected clients for this room
     let hasTvWindow = 0
     let castingClients = 0
-    for (const [, socket] of io.sockets.sockets) {
+    let castingDetails = []
+    
+    for (const [socketId, socket] of io.sockets.sockets) {
       if (socket.tvRoomId === roomId) {
         hasTvWindow++
-        if (socket.isCasting === true) castingClients++
+        if (socket.isCasting === true) {
+          castingClients++
+          castingDetails.push({
+            socketId: socketId.substring(0, 8) + '...',
+            detectionMethod: socket.castDetectionMethod || 'unknown',
+            lastUpdate: socket.lastCastUpdate || 'unknown'
+          })
+        }
       }
     }
+    
     const isCasting = castingClients > 0
     
     res.json({
       connected: isCasting,
       casting: isCasting,
       castingClients: castingClients,
+      tvWindows: hasTvWindow,
+      castingDetails: castingDetails,
       roomId: roomId,
       timestamp: new Date().toISOString()
     })
@@ -753,15 +765,18 @@ io.on('connection', (socket) => {
 
   // Handle actual Chrome Cast status updates
   socket.on('cast-status-update', (data) => {
-    const { roomId, isCasting, timestamp } = data
-    console.log(`🎭 Cast status update for room ${roomId}:`, isCasting ? 'Casting' : 'Not casting')
+    const { roomId, isCasting, timestamp, detectionMethod } = data
+    console.log(`🎭 Cast status update for room ${roomId}:`, isCasting ? 'Casting' : 'Not casting', detectionMethod ? `via ${detectionMethod}` : '')
     
     socket.isCasting = isCasting
+    socket.castDetectionMethod = detectionMethod || 'unknown'
+    socket.lastCastUpdate = timestamp || new Date().toISOString()
     
     // Broadcast Chrome Cast status change to all clients
-    io.emit('chromecast-status-change', {
+    io.to(`room-${roomId}`).emit('chromecast-status-change', {
       roomId: roomId,
       connected: isCasting,
+      detectionMethod: detectionMethod,
       timestamp: timestamp || new Date().toISOString()
     })
   })
