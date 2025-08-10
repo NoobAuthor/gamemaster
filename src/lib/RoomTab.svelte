@@ -147,18 +147,7 @@
     position: relative;
   }
 
-  .room-header h2::before {
-    content: '';
-    position: absolute;
-    left: -24px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    background: var(--gradient-accent);
-    border-radius: var(--radius-sm);
-    box-shadow: 0 0 12px rgba(100, 217, 255, 0.4);
-  }
+
 
   .reset-btn {
     background: var(--glass-bg);
@@ -177,24 +166,9 @@
     gap: var(--space-md);
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
   }
 
-  .reset-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.5s ease;
-  }
 
-  .reset-btn:hover::before {
-    left: 100%;
-  }
 
   .reset-btn:hover {
     background: rgba(255, 87, 87, 0.1);

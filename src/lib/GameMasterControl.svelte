@@ -123,7 +123,7 @@
 
 <div class="gamemaster-container">
   <header class="header">
-    <h1>Game Master - Control de Salas de Escape</h1>
+    <h1>🎮 Game Master - Control de Salas de Escape</h1>
     <div class="header-controls">
       <button class="settings-btn" on:click={openSettings}>
         <span class="btn-icon settings-icon"></span>
@@ -231,18 +231,7 @@
     position: relative;
   }
 
-  .header h1::before {
-    content: '';
-    position: absolute;
-    left: -24px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
-    background: var(--gradient-accent);
-    border-radius: 4px;
-    box-shadow: 0 0 10px rgba(100, 217, 255, 0.4);
-  }
+
 
   .header-controls {
     display: flex;
@@ -268,24 +257,10 @@
     backdrop-filter: blur(10px);
     text-transform: uppercase;
     letter-spacing: 0.025em;
-    position: relative;
-    overflow: hidden;
+
   }
 
-  .settings-btn::before, .tv-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.5s ease;
-  }
 
-  .settings-btn:hover::before, .tv-btn:hover::before {
-    left: 100%;
-  }
 
   .settings-btn:hover, .tv-btn:hover {
     transform: translateY(-1px);
