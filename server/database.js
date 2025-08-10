@@ -309,77 +309,11 @@ class GameDatabase {
       }
     }
 
-    // Check if hints exist
-    const hints = await this.all('SELECT COUNT(*) as count FROM hints')
-    if (hints[0].count === 0) {
-      console.log('💡 Initializing default hints...')
-      const defaultHints = [
-        {
-          id: 'pieza_uno_1',
-          text_es: 'Miren más de cerca los objetos en la mesa',
-          text_en: 'Look more closely at the objects on the table',
-          text_fr: 'Regardez de plus près les objets sur la table',
-          text_de: 'Schauen Sie sich die Gegenstände auf dem Tisch genauer an',
-          category: 'Pieza Uno'
-        },
-        {
-          id: 'pieza_uno_2',
-          text_es: 'El código está relacionado con las fechas en la pared',
-          text_en: 'The code is related to the dates on the wall',
-          text_fr: 'Le code est lié aux dates sur le mur',
-          text_de: 'Der Code steht im Zusammenhang mit den Daten an der Wand',
-          category: 'Pieza Uno'
-        },
-        {
-          id: 'pieza_dos_1',
-          text_es: 'Los números deben estar en orden cronológico',
-          text_en: 'The numbers must be in chronological order',
-          text_fr: 'Les numéros doivent être dans l\'ordre chronologique',
-          text_de: 'Die Zahlen müssen in chronologischer Reihenfolge stehen',
-          category: 'Pieza Dos'
-        },
-        {
-          id: 'pieza_dos_2',
-          text_es: 'Giren la rueda hasta que escuchen un clic',
-          text_en: 'Turn the wheel until you hear a click',
-          text_fr: 'Tournez la roue jusqu\'à entendre un clic',
-          text_de: 'Drehen Sie das Rad, bis Sie ein Klicken hören',
-          category: 'Pieza Dos'
-        },
-        {
-          id: 'pieza_tres_1',
-          text_es: 'Busquen algo escondido debajo del escritorio',
-          text_en: 'Look for something hidden under the desk',
-          text_fr: 'Cherchez quelque chose de caché sous le bureau',
-          text_de: 'Suchen Sie nach etwas Verstecktem unter dem Schreibtisch',
-          category: 'Pieza Tres'
-        },
-        {
-          id: 'pieza_tres_2',
-          text_es: 'Revisen el interior de los libros',
-          text_en: 'Check inside the books',
-          text_fr: 'Vérifiez l\'intérieur des livres',
-          text_de: 'Schauen Sie in die Bücher hinein',
-          category: 'Pieza Tres'
-        },
-        {
-          id: 'pieza_tres_3',
-          text_es: 'Ya casi lo tienen, revisen la secuencia una vez más',
-          text_en: 'You almost have it, check the sequence one more time',
-          text_fr: 'Vous y êtes presque, vérifiez la séquence une fois de plus',
-          text_de: 'Ihr habt es fast, überprüft die Sequenz noch einmal',
-          category: 'Pieza Tres'
-        }
-      ]
-
-      for (const hint of defaultHints) {
-        await this.run(
-          `INSERT INTO hints (id, text_es, text_en, text_fr, text_de, category, created_at, updated_at) 
-           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-          [hint.id, hint.text_es, hint.text_en, hint.text_fr, hint.text_de, hint.category]
-        )
-      }
-    }
+    // Don't initialize default hints - let admin create them manually
+    // const hints = await this.all('SELECT COUNT(*) as count FROM hints')
+    // if (hints[0].count === 0) {
+    //   console.log('💡 No default hints will be initialized - admin can create them manually')
+    // }
   }
 
   // Promisified database operations

@@ -46,27 +46,6 @@
       "players": []
     }
   ],
-  "hints": [
-    {
-      "id": "general_1",
-      "text": {
-        "es": "Miren más de cerca los objetos en la mesa",
-        "en": "Look more closely at the objects on the table",
-        "fr": "Regardez de plus près les objets sur la table",
-        "de": "Schauen Sie sich die Gegenstände auf dem Tisch genauer an"
-      },
-      "category": "General"
-    },
-    {
-      "id": "general_2",
-      "text": {
-        "es": "El código está relacionado con las fechas en la pared",
-        "en": "The code is related to the dates on the wall",
-        "fr": "Le code est lié aux dates sur le mur",
-        "de": "Der Code steht im Zusammenhang mit den Daten an der Wand"
-      },
-      "category": "General"
-    }
-  ],
+  "hints": [],
   "lastSaved": "2025-08-01T00:10:03.354Z"
 }

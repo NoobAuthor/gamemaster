@@ -396,50 +396,7 @@
     }
   }
 
-  function getDefaultMessages() {
-    return {
-      es: [
-        '¡Excelente trabajo equipo!',
-        'Van por buen camino',
-        'Se están acercando a la solución',
-        '¡Muy bien! Sigan así',
-        'Tómense un momento para revisar',
-        'Trabajan muy bien en equipo',
-        '¡Están a punto de resolverlo!',
-        'Recuerden que tienen pistas disponibles'
-      ],
-      en: [
-        'Excellent work team!',
-        'You\'re on the right track',
-        'You\'re getting closer to the solution',
-        'Very good! Keep it up',
-        'Take a moment to review',
-        'You work very well as a team',
-        'You\'re about to solve it!',
-        'Remember you have hints available'
-      ],
-      fr: [
-        'Excellent travail équipe !',
-        'Vous êtes sur la bonne voie',
-        'Vous vous rapprochez de la solution',
-        'Très bien ! Continuez comme ça',
-        'Prenez un moment pour réviser',
-        'Vous travaillez très bien en équipe',
-        'Vous êtes sur le point de le résoudre !',
-        'Rappelez-vous que vous avez des indices disponibles'
-      ],
-      de: [
-        'Ausgezeichnete Arbeit Team!',
-        'Ihr seid auf dem richtigen Weg',
-        'Ihr kommt der Lösung näher',
-        'Sehr gut! Macht weiter so',
-        'Nehmt euch einen Moment zum Überprüfen',
-        'Ihr arbeitet sehr gut als Team',
-        'Ihr seid kurz davor es zu lösen!',
-        'Denkt daran, dass ihr Hinweise zur Verfügung habt'
-      ]
-    }
-  }
+  // Removed hardcoded default messages - admin should create messages manually
 
   function closeSettings() {
     isOpen = false

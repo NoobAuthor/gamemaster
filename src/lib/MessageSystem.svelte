@@ -58,67 +58,8 @@
     }
   }
 
-  async function initializeDefaultMessages() {
-    const defaultMessages = getDefaultMessages()
-    
-    try {
-      for (const [lang, messages] of Object.entries(defaultMessages)) {
-        for (const message of messages) {
-          await createRoomMessage(room.id, lang, message)
-        }
-      }
-      
-      // Reload messages after initialization
-      await loadMessagesFromServer()
-    } catch (error) {
-      console.error('❌ Error inicializando mensajes:', error)
-    }
-  }
-
-  function getDefaultMessages() {
-    return {
-      es: [
-        '¡Excelente trabajo equipo!',
-        'Van por buen camino',
-        'Se están acercando a la solución',
-        '¡Muy bien! Sigan así',
-        'Tómense un momento para revisar',
-        'Trabajan muy bien en equipo',
-        '¡Están a punto de resolverlo!',
-        'Recuerden que tienen pistas disponibles'
-      ],
-      en: [
-        'Excellent work team!',
-        'You\'re on the right track',
-        'You\'re getting closer to the solution',
-        'Very good! Keep it up',
-        'Take a moment to review',
-        'You work very well as a team',
-        'You\'re about to solve it!',
-        'Remember you have hints available'
-      ],
-      fr: [
-        'Excellent travail équipe !',
-        'Vous êtes sur la bonne voie',
-        'Vous vous rapprochez de la solution',
-        'Très bien ! Continuez comme ça',
-        'Prenez un moment pour réviser',
-        'Vous travaillez très bien en équipe',
-        'Vous êtes sur le point de le résoudre !',
-        'Rappelez-vous que vous avez des indices disponibles'
-      ],
-      de: [
-        'Ausgezeichnete Arbeit Team!',
-        'Ihr seid auf dem richtigen Weg',
-        'Ihr kommt der Lösung näher',
-        'Sehr gut! Macht weiter so',
-        'Nehmt euch einen Moment zum Überprüfen',
-        'Ihr arbeitet sehr gut als Team',
-        'Ihr seid kurz davor es zu lösen!',
-        'Denkt daran, dass ihr Hinweise zur Verfügung habt'
-      ]
-    }
-  }
+  // Removed hardcoded default message initialization 
+  // Admin should create messages manually through settings
 
   function sendMessage(message: string) {
     if (!message.trim()) {
@@ -224,7 +165,7 @@
     text-align: center;
   }
 
-  .predefined-messages h4, .last-message h4 {
+  .last-message h4 {
     margin-bottom: 1rem;
     color: #00d4ff;
     font-size: 1rem;
