@@ -572,12 +572,21 @@
     }
   }
 
-  async function deleteHint(hintId: string) {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta pista?')) return
+  // Delete confirmation modal states
+  let showDeleteHintModal = false
+  let hintToDelete: { id: string, text: string } | null = null
+
+  function confirmDeleteHint(hintId: string, hintText: string) {
+    hintToDelete = { id: hintId, text: hintText }
+    showDeleteHintModal = true
+  }
+
+  async function deleteHint() {
+    if (!hintToDelete) return
 
     try {
       isLoading = true
-      await apiDeleteHint(hintId)
+      await apiDeleteHint(hintToDelete.id)
         await loadHints()
         dispatch('hints-updated')
       toast.success('Pista eliminada')
@@ -586,7 +595,14 @@
       toast.error('No se pudo eliminar la pista')
     } finally {
       isLoading = false
+      showDeleteHintModal = false
+      hintToDelete = null
     }
+  }
+
+  function cancelDeleteHint() {
+    showDeleteHintModal = false
+    hintToDelete = null
   }
 
   function cancelHintEdit() {
@@ -653,23 +669,38 @@
     }
   }
 
-  async function deleteCategory(categoryName: string) {
-    if (!confirm(`¿Estás seguro de que quieres eliminar la categoría "${categoryName}"?`)) return
+  let showDeleteCategoryModal = false
+  let categoryToDelete: string | null = null
+
+  function confirmDeleteCategory(categoryName: string) {
+    categoryToDelete = categoryName
+    showDeleteCategoryModal = true
+  }
+
+  async function deleteCategory() {
+    if (!categoryToDelete) return
 
     try {
       isLoading = true
       const { deleteRoomCategory } = await import('./api')
-      const result = await deleteRoomCategory(selectedRoomId, categoryName)
+      const result = await deleteRoomCategory(selectedRoomId, categoryToDelete)
       if (result.success) {
         await loadCategories()
       } else {
-        alert(result.message)
+        toast.error(result.message)
       }
     } catch (error) {
       console.error('Error deleting category:', error)
     } finally {
       isLoading = false
+      showDeleteCategoryModal = false
+      categoryToDelete = null
     }
+  }
+
+  function cancelDeleteCategory() {
+    showDeleteCategoryModal = false
+    categoryToDelete = null
   }
 
   function cancelCategoryEdit() {
@@ -702,9 +733,17 @@
     isCreatingMessage = false
   }
 
-  async function deleteMessage(index: number, language: Language) {
-    const messageToDelete = roomMessages[language][index]
-    if (!confirm(`¿Estás seguro de que quieres eliminar este mensaje: "${messageToDelete.message}"?`)) return
+  let showDeleteMessageModal = false
+  let messageToDelete: { index: number, language: Language, text: string, id: number } | null = null
+
+  function confirmDeleteMessage(index: number, language: Language) {
+    const msg = roomMessages[language][index]
+    messageToDelete = { index, language, text: msg.message, id: msg.id }
+    showDeleteMessageModal = true
+  }
+
+  async function deleteMessage() {
+    if (!messageToDelete) return
 
     try {
       isLoading = true
@@ -716,7 +755,14 @@
       toast.error('No se pudo eliminar el mensaje')
     } finally {
       isLoading = false
+      showDeleteMessageModal = false
+      messageToDelete = null
     }
+  }
+
+  function cancelDeleteMessage() {
+    showDeleteMessageModal = false
+    messageToDelete = null
   }
 
   async function addMessage() {

@@ -2,6 +2,7 @@
   import type { Language } from '../types'
   import { getLanguages, getRoomMessagesGrouped, createRoomMessage, deleteRoomMessage } from '../api'
   import { toast } from '../toast'
+  import Modal from '../Modal.svelte'
 
   export let roomId: number
 
@@ -63,9 +64,20 @@
     }
   }
 
-  async function deleteMessage(index: number, language: Language) {
+  // Delete confirmation modal state
+  let showDeleteModal = false
+  let messageToDelete: { index: number, language: Language, message: string } | null = null
+
+  function confirmDeleteMessage(index: number, language: Language) {
     const toDelete = roomMessages[language][index]
-    if (!confirm(`¿Eliminar este mensaje: "${toDelete.message}"?`)) return
+    messageToDelete = { index, language, message: toDelete.message }
+    showDeleteModal = true
+  }
+
+  async function deleteMessage() {
+    if (!messageToDelete) return
+    
+    const toDelete = roomMessages[messageToDelete.language][messageToDelete.index]
     try {
       isLoading = true
       await deleteRoomMessage(roomId, toDelete.id)
@@ -75,7 +87,14 @@
       toast.error('No se pudo eliminar el mensaje')
     } finally {
       isLoading = false
+      showDeleteModal = false
+      messageToDelete = null
     }
+  }
+
+  function cancelDelete() {
+    showDeleteModal = false
+    messageToDelete = null
   }
 </script>
 
@@ -136,7 +155,7 @@
             <span class="btn-icon edit-icon"></span>
             Editar
           </button>
-          <button class="delete-btn" on:click={() => deleteMessage(index, viewingLanguage)}>
+          <button class="delete-btn" on:click={() => confirmDeleteMessage(index, viewingLanguage)}>
             <span class="btn-icon delete-icon"></span>
             Eliminar
           </button>
@@ -181,5 +200,21 @@
     .form-actions { flex-direction: column; }
   }
 </style>
+
+<!-- Delete Confirmation Modal -->
+<Modal 
+  bind:isOpen={showDeleteModal}
+  title="Eliminar Mensaje"
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  on:confirm={deleteMessage}
+  on:cancel={cancelDelete}
+>
+  <p>¿Estás seguro de que quieres eliminar este mensaje?</p>
+  {#if messageToDelete}
+    <p><strong>"{messageToDelete.message}"</strong></p>
+  {/if}
+  <p>Esta acción no se puede deshacer.</p>
+</Modal>
 
 

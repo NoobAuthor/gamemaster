@@ -4,6 +4,7 @@
   import { toast } from '../toast'
   import { getLanguages, getRoomHints, createRoomHint, deleteHint as apiDeleteHint, getRoomCategories } from '../api'
   import type { Hint, Language } from '../types'
+  import Modal from '../Modal.svelte'
 
   export let roomId: number
 
@@ -115,11 +116,21 @@
     } catch {}
   }
 
-  async function deleteHint(id: string) {
-    if (!confirm('¿Eliminar esta pista?')) return
+  // Delete confirmation modal state
+  let showDeleteModal = false
+  let hintToDelete: { id: string, text: string } | null = null
+
+  function confirmDeleteHint(id: string, text: string) {
+    hintToDelete = { id, text }
+    showDeleteModal = true
+  }
+
+  async function deleteHint() {
+    if (!hintToDelete) return
+    
     try {
       isLoading = true
-      await apiDeleteHint(id)
+      await apiDeleteHint(hintToDelete.id)
       await reloadHints()
       toast.success('Pista eliminada')
       dispatch('hints-updated')
@@ -127,7 +138,14 @@
       toast.error('No se pudo eliminar la pista')
     } finally {
       isLoading = false
+      showDeleteModal = false
+      hintToDelete = null
     }
+  }
+
+  function cancelDelete() {
+    showDeleteModal = false
+    hintToDelete = null
   }
 </script>
 
@@ -187,7 +205,7 @@
                 <span class="btn-icon edit-icon"></span>
                 Editar
               </button>
-              <button class="delete-btn" on:click={() => deleteHint(hint.id)}>
+              <button class="delete-btn" on:click={() => confirmDeleteHint(hint.id, hint.text[viewingLanguage] || hint.text['es'] || 'Pista sin texto')}>
                 <span class="btn-icon delete-icon"></span>
                 Eliminar
               </button>
@@ -241,5 +259,21 @@
     .hint-actions { justify-content: center; }
   }
 </style>
+
+<!-- Delete Confirmation Modal -->
+<Modal 
+  bind:isOpen={showDeleteModal}
+  title="Eliminar Pista"
+  confirmText="Eliminar"
+  cancelText="Cancelar"
+  on:confirm={deleteHint}
+  on:cancel={cancelDelete}
+>
+  <p>¿Estás seguro de que quieres eliminar esta pista?</p>
+  {#if hintToDelete}
+    <p><strong>"{hintToDelete.text}"</strong></p>
+  {/if}
+  <p>Esta acción no se puede deshacer.</p>
+</Modal>
 
 
