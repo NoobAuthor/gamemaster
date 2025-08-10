@@ -461,24 +461,9 @@
     letter-spacing: 0.025em;
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
   }
 
-  .add-hints-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.5s ease;
-  }
 
-  .add-hints-btn:hover::before {
-    left: 100%;
-  }
 
   .add-hints-btn:hover {
     background: rgba(74, 222, 128, 0.1);
@@ -512,24 +497,9 @@
     letter-spacing: 0.025em;
     backdrop-filter: blur(10px);
     box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
   }
 
-  .type-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    transition: left 0.5s ease;
-  }
 
-  .type-btn:hover::before {
-    left: 100%;
-  }
 
   .type-btn.active {
     background: rgba(100, 217, 255, 0.1);
