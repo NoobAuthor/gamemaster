@@ -6,7 +6,10 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 // Database setup
-const DATABASE_PATH = join(__dirname, 'gamemaster.db')
+// Allow overriding the DB path for packaged apps (e.g., Electron) where writing inside asar is not possible
+const DATABASE_PATH = process.env.GAMEMASTER_DB_PATH && process.env.GAMEMASTER_DB_PATH.trim() !== ''
+  ? process.env.GAMEMASTER_DB_PATH
+  : join(__dirname, 'gamemaster.db')
 
 class GameDatabase {
   constructor() {

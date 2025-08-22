@@ -1,0 +1,289 @@
+# Game Master - Escape Room Management System
+# .gitignore file for Node.js + Electron + Svelte + TypeScript project
+
+# ===========================
+# Dependencies
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===========================
+# Build Outputs
+# ===========================
+dist/
+dist-electron/
+build/
+out/
+.output/
+.vite/
+.svelte-kit/
+
+# ===========================
+# Development
+# ===========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ===========================
+# Logs
+# ===========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===========================
+# Runtime Data
+# ===========================
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ===========================
+# Coverage & Testing
+# ===========================
+coverage/
+*.lcov
+.nyc_output/
+lib-cov/
+.coverage/
+.pytest_cache/
+.vitest/
+
+# ===========================
+# Electron Specific
+# ===========================
+# Electron build outputs
+app/
+release/
+packages/
+
+# Electron auto-updater cache
+.electron-updater/
+
+# ===========================
+# Database Files
+# ===========================
+# Keep the schema but ignore data
+server/gamemaster.db
+server/gamemaster.db-journal
+server/gamemaster.db-wal
+server/gamemaster.db-shm
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ===========================
+# Temporary Files
+# ===========================
+tmp/
+temp/
+.tmp/
+.temp/
+*.tmp
+*.temp
+
+# ===========================
+# OS Generated Files
+# ===========================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===========================
+# Security & Secrets
+# ===========================
+.env
+.env.local
+.env.*.local
+.npmrc
+auth.json
+secrets.json
+config/local.json
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# ===========================
+# Editor & IDE
+# ===========================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===========================
+# Package Manager Locks
+# ===========================
+# Keep package-lock.json for reproducible builds
+# Uncomment if using yarn exclusively:
+# package-lock.json
+
+# ===========================
+# TypeScript
+# ===========================
+*.tsbuildinfo
+.tscache/
+
+# ===========================
+# Svelte
+# ===========================
+.svelte-kit/
+.svelte/
+
+# ===========================
+# Vite
+# ===========================
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# ===========================
+# Electron Builder
+# ===========================
+# Build artifacts
+dist_electron/
+release/
+packages/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.tar.gz
+*.zip
+
+# Code signing
+*.p12
+*.pfx
+*.pem
+
+# ===========================
+# Auto-generated Files
+# ===========================
+# Don't ignore these as they might be needed:
+# package-lock.json (for reproducible builds)
+# tsconfig.json (TypeScript config)
+# svelte.config.js (Svelte config)
+
+# ===========================
+# Custom Project Files
+# ===========================
+# Game data backups
+server/gamedata.backup.json
+server/backups/
+
+# User uploads (if any)
+uploads/
+user-data/
+
+# Analytics and logs
+analytics/
+game-logs/
+
+# ===========================
+# Documentation Build
+# ===========================
+docs/build/
+docs/.vuepress/dist/
+
+# ===========================
+# Miscellaneous
+# ===========================
+*.tgz
+*.tar.gz
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vercel/
+.netlify/
+
+# ===========================
+# Keep Important Files
+# ===========================
+# These files should be committed:
+!README.md
+!package.json
+!package-lock.json
+!tsconfig.json
+!svelte.config.js
+!vite.config.ts
+!electron/
+!src/
+!public/
+!server/index.js
+!server/database.js
+# Keep empty database schema file if you create one
+!server/schema.sql

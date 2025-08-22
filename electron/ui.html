@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Master Launcher</title>
+    <style>
+      body { font-family: -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; }
+      header { padding: 16px; background: #111827; color: white; }
+      h1 { margin: 0; font-size: 18px; }
+      main { padding: 16px; }
+      .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+      .addr { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; padding: 12px 16px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; font-size: 16px; font-weight: 600; }
+      .addr-primary { background: #dbeafe; border: 2px solid #3b82f6; color: #1e40af; }
+      .addr-secondary { font-size: 14px; padding: 8px 12px; margin: 4px 0; }
+      .row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+      button { background: #111827; color: white; border: 0; border-radius: 6px; padding: 12px 16px; cursor: pointer; font-size: 14px; font-weight: 500; }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      small { color: #6b7280; }
+      details { margin-top: 16px; }
+      summary { cursor: pointer; color: #6b7280; font-size: 14px; }
+      .url-text { font-size: 18px; color: #1e40af; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Game Master Launcher</h1>
+    </header>
+    <main>
+      <div class="card">
+        <p><strong>Share this address with other Game Masters:</strong></p>
+        <div id="primary" class="addr addr-primary" style="margin-bottom:16px;"></div>
+        <div class="row">
+          <button id="open">Open Control Panel</button>
+          <small>Opens in your default browser</small>
+        </div>
+        <div class="row">
+          <button id="update">Check for Updates</button>
+          <small id="update-status">Check for latest version</small>
+        </div>
+        <details>
+          <summary>Show all network addresses</summary>
+          <div id="list" style="margin-top:8px;"></div>
+        </details>
+      </div>
+      <div class="card">
+        <strong>Tips</strong>
+        <ul>
+          <li>Connect devices to the same Wi‑Fi network</li>
+          <li>Share the LAN address with other Game Masters</li>
+        </ul>
+      </div>
+    </main>
+    <script>
+      const list = document.getElementById('list')
+      const primary = document.getElementById('primary')
+      const btn = document.getElementById('open')
+      const updateBtn = document.getElementById('update')
+      const updateStatus = document.getElementById('update-status')
+      let firstUrl = null
+
+      function render(addresses) {
+        console.log('Rendering addresses:', addresses)
+        list.innerHTML = ''
+        
+        // Prefer first non-localhost entry as primary
+        const primaryEntry = addresses.find(a => !a.address.includes('127.0.0.1')) || addresses[0]
+        firstUrl = primaryEntry ? primaryEntry.address : null
+        
+        if (primaryEntry) {
+          primary.innerHTML = `<span class="url-text">${primaryEntry.address}</span>`
+        } else {
+          primary.innerHTML = '<span>No network found - Check Wi-Fi</span>'
+        }
+        
+        btn.disabled = !firstUrl
+        console.log('Primary URL set to:', firstUrl)
+
+        // Render all addresses as alternatives
+        addresses.forEach(a => {
+          const row = document.createElement('div')
+          row.innerHTML = `<div class="addr addr-secondary"><span>${a.address}</span><small>${a.name}</small></div>`
+          list.appendChild(row)
+        })
+      }
+
+      window.gm.getLanAddresses().then(render).catch(console.error)
+      
+      btn.addEventListener('click', async () => {
+        console.log('Button clicked, opening:', firstUrl)
+        if (!firstUrl) {
+          console.error('No URL to open')
+          return
+        }
+        try {
+          const result = await window.gm.openControlPanel(firstUrl)
+          console.log('Open result:', result)
+        } catch (e) {
+          console.error('Failed to open:', e)
+        }
+      })
+
+      updateBtn.addEventListener('click', async () => {
+        console.log('Update button clicked')
+        updateBtn.disabled = true
+        updateStatus.textContent = 'Checking for updates...'
+        
+        try {
+          const result = await window.gm.checkForUpdates()
+          console.log('Update check result:', result)
+          
+          if (result.error) {
+            updateStatus.textContent = `Error: ${result.error}`
+            updateBtn.disabled = false
+            return
+          }
+          
+          if (result.available) {
+            updateStatus.textContent = `Update available: v${result.version}`
+            updateBtn.textContent = 'Download Update'
+            updateBtn.disabled = false
+            
+            // Change button behavior to download
+            updateBtn.onclick = async () => {
+              updateBtn.disabled = true
+              updateStatus.textContent = 'Downloading update...'
+              
+              try {
+                const downloadResult = await window.gm.downloadUpdate()
+                if (downloadResult.success) {
+                  updateStatus.textContent = 'Update downloaded. Ready to install.'
+                  updateBtn.textContent = 'Install & Restart'
+                  updateBtn.disabled = false
+                  
+                  // Change button behavior to install
+                  updateBtn.onclick = async () => {
+                    updateStatus.textContent = 'Installing update...'
+                    await window.gm.installUpdate()
+                  }
+                } else {
+                  updateStatus.textContent = `Download failed: ${downloadResult.error}`
+                  updateBtn.disabled = false
+                }
+              } catch (e) {
+                updateStatus.textContent = `Download error: ${e.message}`
+                updateBtn.disabled = false
+              }
+            }
+          } else {
+            updateStatus.textContent = 'You have the latest version'
+            updateBtn.disabled = false
+          }
+        } catch (e) {
+          console.error('Update check failed:', e)
+          updateStatus.textContent = `Check failed: ${e.message}`
+          updateBtn.disabled = false
+        }
+      })
+    </script>
+  </body>
+  </html>
+
+

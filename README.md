@@ -277,6 +277,11 @@ npm run build            # Construir para producción
 npm run preview          # Vista previa de producción
 npm run server           # Ejecutar servidor de producción
 
+# Aplicación de Escritorio (Electron)
+npm run app:dev          # Construir y lanzar la app Electron
+npm run app:pack         # Empaquetar app (carpeta sin instalador)
+npm run app:dist         # Generar instaladores (.dmg/.nsis/.AppImage)
+
 # Utilidades
 npm run check            # Verificar tipos TypeScript
 ```
