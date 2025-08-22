@@ -4,15 +4,43 @@ import path from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { execSync } from 'child_process'
 
-// Import electron-updater safely with error handling
+// Import electron-updater with error handling
 let autoUpdater = null
 async function initAutoUpdater() {
   try {
-    const pkg = await import('electron-updater')
-    autoUpdater = pkg.autoUpdater
-    console.log('✅ Auto-updater loaded successfully')
-  } catch (error) {
-    console.warn('⚠️ electron-updater not available:', error.message)
+    // Try CommonJS require first (more reliable in Electron)
+    const { autoUpdater: updater } = require('electron-updater')
+    autoUpdater = updater
+    
+    // Configure auto-updater if available
+    if (autoUpdater) {
+      autoUpdater.checkForUpdatesAndNotify = false // We'll handle this manually
+      autoUpdater.autoDownload = false // Don't auto-download, let user choose
+      
+      // Configure to only check main branch releases
+      autoUpdater.allowPrerelease = false // Only stable releases from main branch
+      autoUpdater.allowDowngrade = false // Don't allow downgrades
+      
+      console.log('✅ Auto-updater loaded and configured for GitHub repository: NoobAuthor/gamemaster')
+      console.log('📋 Auto-updater will only check for releases from the main branch')
+    }
+  } catch (requireError) {
+    console.log('CommonJS require failed, trying ES6 import...', requireError.message)
+    try {
+      // Fallback to ES6 import
+      const { autoUpdater: updater } = await import('electron-updater')
+      autoUpdater = updater
+      
+      // Configure auto-updater if available
+      if (autoUpdater) {
+        autoUpdater.checkForUpdatesAndNotify = false
+        autoUpdater.autoDownload = false
+        console.log('✅ Auto-updater loaded via ES6 import and configured successfully')
+      }
+    } catch (importError) {
+      console.warn('⚠️ electron-updater not available via require or import:', importError.message)
+      autoUpdater = null
+    }
   }
 }
 
@@ -144,11 +172,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'ui.html'))
 }
 
-// Configure auto-updater if available
-if (autoUpdater) {
-  autoUpdater.checkForUpdatesAndNotify = false // We'll handle this manually
-  autoUpdater.autoDownload = false // Don't auto-download, let user choose
-}
+
 
 // Register IPC handlers once
 const port = process.env.PORT || '3001'
@@ -166,7 +190,7 @@ try {
   // Update handlers
   ipcMain.handle('check-for-updates', async () => {
     if (!autoUpdater) {
-      return { available: false, version: null, error: 'Auto-updater not available' }
+      return { available: false, version: null, error: 'Auto-updater not available - please configure GitHub repository in package.json' }
     }
     try {
       const result = await autoUpdater.checkForUpdates()
@@ -176,31 +200,34 @@ try {
         error: null
       }
     } catch (e) {
-      return { available: false, version: null, error: e.message }
+      console.error('❌ Update check failed:', e.message)
+      return { available: false, version: null, error: `Update check failed: ${e.message}` }
     }
   })
   
   ipcMain.handle('download-update', async () => {
     if (!autoUpdater) {
-      return { success: false, error: 'Auto-updater not available' }
+      return { success: false, error: 'Auto-updater not available - please configure GitHub repository in package.json' }
     }
     try {
       await autoUpdater.downloadUpdate()
       return { success: true, error: null }
     } catch (e) {
-      return { success: false, error: e.message }
+      console.error('❌ Update download failed:', e.message)
+      return { success: false, error: `Download failed: ${e.message}` }
     }
   })
   
   ipcMain.handle('install-update', () => {
     if (!autoUpdater) {
-      return { success: false, error: 'Auto-updater not available' }
+      return { success: false, error: 'Auto-updater not available - please configure GitHub repository in package.json' }
     }
     try {
       autoUpdater.quitAndInstall()
       return { success: true }
     } catch (e) {
-      return { success: false, error: e.message }
+      console.error('❌ Update install failed:', e.message)
+      return { success: false, error: `Install failed: ${e.message}` }
     }
   })
 } catch {}
@@ -217,7 +244,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 app.whenReady().then(async () => {
   try {
-    // Initialize auto-updater after app is ready
+    // Initialize auto-updater
     await initAutoUpdater()
     
     const port = process.env.PORT || '3001'

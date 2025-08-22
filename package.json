@@ -50,8 +50,8 @@
     "asar": true,
     "publish": {
       "provider": "github",
-      "owner": "GITHUB_USERNAME",
-      "repo": "GITHUB_REPO_NAME"
+      "owner": "NoobAuthor",
+      "repo": "gamemaster"
     },
     "mac": {
       "target": "dmg",
