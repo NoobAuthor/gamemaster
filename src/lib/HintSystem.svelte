@@ -13,12 +13,18 @@
   // Custom hint text stored per room so it doesn't bleed between rooms
   let customHintByRoom: Record<number, string> = {}
   
-  // Create a reactive variable specifically for the current room's custom hint
-  $: currentCustomHint = customHintByRoom[room.id] || ''
+  // Getter for current room's custom hint
+  function getCurrentCustomHint(): string {
+    return customHintByRoom[room.id] || ''
+  }
   
-  // Sync reactive variable back to object when it changes
-  $: if (room.id !== undefined) {
-    customHintByRoom[room.id] = currentCustomHint
+  // Setter for current room's custom hint
+  function setCurrentCustomHint(value: string) {
+    if (room.id !== undefined) {
+      customHintByRoom[room.id] = value
+      // Force reactivity update for Svelte
+      customHintByRoom = customHintByRoom
+    }
   }
 
   let hintsLibrary: Hint[] = []
@@ -41,13 +47,10 @@
 
   onMount(async () => {
     currentRoomId = room.id
-    console.log('💡 Component mounted, room ID:', room.id)
-    console.log('💡 customHintByRoom initial state:', customHintByRoom)
     
     // Initialize customHintByRoom for this room if it doesn't exist
     if (room.id !== undefined && !(room.id in customHintByRoom)) {
       customHintByRoom[room.id] = ''
-      console.log('💡 Initialized customHintByRoom for room:', room.id)
       // Force reactivity update
       customHintByRoom = customHintByRoom
     }
@@ -63,7 +66,6 @@
     // Initialize customHintByRoom for the new room if it doesn't exist
     if (!(room.id in customHintByRoom)) {
       customHintByRoom[room.id] = ''
-      console.log('💡 Initialized customHintByRoom for new room:', room.id)
       // Force reactivity update
       customHintByRoom = customHintByRoom
     }
@@ -75,7 +77,6 @@
   // Ensure customHintByRoom is always initialized for the current room
   $: if (room.id !== undefined && !(room.id in customHintByRoom)) {
     customHintByRoom[room.id] = ''
-    console.log('💡 Reactive initialization of customHintByRoom for room:', room.id)
     // Force reactivity update
     customHintByRoom = customHintByRoom
   }
@@ -84,7 +85,6 @@
     try {
       loadingHints = true
       hintsLibrary = await getRoomHints(room.id)
-      console.log('✅ Pistas cargadas desde servidor para sala', room.id, ':', hintsLibrary.length)
     } catch (error) {
       console.error('❌ Error conectando con servidor:', error)
     } finally {
@@ -124,10 +124,7 @@
       return
     }
     
-    console.log('💡 sendHint called with:', { hintText, hintId, roomId: room.id, language: currentLanguage })
-    
     if (!hintText.trim()) {
-      console.log('⚠️ Hint text is empty, not sending')
       return
     }
 
@@ -137,27 +134,12 @@
       hintId: hintId || 'custom',
       language: currentLanguage
     }
-    
-    console.log('💡 Emitting hint-sent event:', eventData)
-    console.log('💡 Socket connected?', socket.connected)
-    console.log('💡 Socket ID:', socket.id)
 
+    // Emit the hint to the server
     socket.emit('hint-sent', eventData)
-    
-    // Add event to verify the socket emission was successful
-    socket.emit('debug-hint-emission', {
-      ...eventData,
-      timestamp: new Date().toISOString(),
-      clientType: 'game-master'
-    })
 
+    // Dispatch local event for UI updates
     dispatch('hint-sent', { hint: hintText, language: currentLanguage })
-    
-    // Limpiar input solo de esta sala
-    setCustomHint('')
-    showCustomHint = false
-    
-    console.log('✅ Hint sent successfully')
   }
 
   function sendHintDirectly(hint: Hint) {
@@ -171,18 +153,14 @@
       return
     }
     
-    console.log('💡 Custom hint function called, current hint:', currentCustomHint)
-    console.log('💡 Room ID:', room.id)
-    console.log('💡 customHintByRoom:', customHintByRoom)
-    console.log('💡 Type of currentHint:', typeof currentCustomHint)
-    console.log('💡 Length of currentHint:', currentCustomHint.length)
+    const currentHint = customHintByRoom[room.id] || ''
     
-    if (currentCustomHint && currentCustomHint.trim()) {
-      console.log('💡 Sending custom hint:', currentCustomHint)
-      sendHint(currentCustomHint)
-    } else {
-      console.log('⚠️ Custom hint is empty or undefined')
-      console.log('⚠️ currentHint value:', JSON.stringify(currentCustomHint))
+    if (currentHint && currentHint.trim()) {
+      sendHint(currentHint)
+      
+      // Clear custom hint input and switch back to library view after sending
+      setCustomHint('')
+      showCustomHint = false
     }
   }
 
@@ -214,25 +192,12 @@
     showCustomHint = !showCustomHint
   }
 
-  function handleCustomHintInput(event: Event) {
-    const target = event.target as HTMLTextAreaElement
-    const value = target.value
-    console.log('💡 Custom hint input changed:', value)
-    customHintByRoom[room.id] = value
-    // Force reactivity update
-    customHintByRoom = customHintByRoom
-  }
-
   function handleCustomHintKeydown(event: KeyboardEvent) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
-      console.log('💡 Enter key pressed in custom hint textarea')
-      console.log('💡 Current hint value:', currentCustomHint)
-      if (currentCustomHint && currentCustomHint.trim()) {
-        console.log('💡 Calling sendCustomHint from keydown handler')
+      const currentHint = customHintByRoom[room.id] || ''
+      if (currentHint && currentHint.trim()) {
         sendCustomHint()
-      } else {
-        console.log('⚠️ Hint is empty, not sending from keydown handler')
       }
     }
   }
@@ -422,22 +387,18 @@
     <div class="custom-hint">
       <h4>Escribir pista personalizada:</h4>
       <textarea 
-        bind:value={currentCustomHint}
+        bind:value={customHintByRoom[room.id]}
         placeholder="Escribe tu pista personalizada aquí... (Presiona Enter para enviar)"
         rows="4"
         on:keydown={handleCustomHintKeydown}
-        on:input={handleCustomHintInput}
       ></textarea>
       
-      <!-- Debug display to see if binding is working -->
-      <div style="font-size: 0.8rem; color: #888; margin-bottom: 0.5rem;">
-        Debug: Current hint value: "{currentCustomHint || 'empty'}"
-      </div>
+
       
       <button 
         class="send-hint-btn" 
         class:penalty-warning={room.hintsRemaining <= 0}
-        disabled={!currentCustomHint.trim()}
+        disabled={!customHintByRoom[room.id]?.trim()}
         on:click={sendCustomHint}
       >
         <span class="btn-icon send-icon"></span>
@@ -680,17 +641,7 @@
 
 
 
-  .hint-card.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: rgba(255, 255, 255, 0.05);
-  }
 
-  .hint-card.disabled:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    transform: none;
-  }
 
   .hint-card.penalty-warning {
     border-color: #ff6b3d;

@@ -577,7 +577,7 @@ class GameDatabase {
 
   async createMessageForRoom(roomId, language, message) {
     return this.run(
-      'INSERT OR REPLACE INTO room_messages (room_id, language, message, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+      'INSERT INTO room_messages (room_id, language, message, created_at, updated_at, is_active) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 1)',
       [roomId, language, message]
     )
   }

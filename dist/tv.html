@@ -1263,15 +1263,13 @@
             });
 
             socket.on("hint-sent", (data) => {
-                console.log("💡 Evento hint-sent recibido:", data);
-                console.log("💡 Room ID en evento:", data.roomId, "Room ID de esta ventana:", roomId);
-                console.log("💡 Tipo de hint:", data.hintId || 'unknown');
+                console.log("💡 Hint received:", data.hintId || 'custom', "for room", data.roomId);
                 
                 if (data.roomId === roomId) {
-                    console.log("💡 Pista recibida para esta sala:", data.hint);
+                    console.log("💡 Displaying hint:", data.hint);
                     showHint(data.hint, data.timePenaltyApplied);
                 } else {
-                    console.log("⚠️ Pista recibida para otra sala:", data.roomId, "esta sala:", roomId);
+                    console.log("⚠️ Hint for different room:", data.roomId, "this room:", roomId);
                 }
             });
 

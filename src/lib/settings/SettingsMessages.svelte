@@ -13,6 +13,7 @@
   let editingMessageLanguage: Language = 'es'
   let newMessage = ''
   let isLoading = false
+  let showCreateForm = false
 
   $: load()
 
@@ -32,32 +33,42 @@
     newMessage = ''
     editingMessageIndex = -1
     editingMessageLanguage = viewingLanguage
+    showCreateForm = true
   }
 
   function startEditingMessage(index: number, language: Language) {
     editingMessageIndex = index
     editingMessageLanguage = language
     newMessage = roomMessages[language][index].message
+    showCreateForm = true
   }
 
   function cancelMessageEdit() {
     editingMessageIndex = -1
     newMessage = ''
+    showCreateForm = false
   }
 
   async function addMessage() {
-    if (!newMessage.trim()) return
+    if (!newMessage.trim()) {
+      return
+    }
+    
     try {
       isLoading = true
+      
       if (editingMessageIndex >= 0) {
         const toEdit = roomMessages[editingMessageLanguage][editingMessageIndex]
         await deleteRoomMessage(roomId, toEdit.id)
       }
+      
       await createRoomMessage(roomId, editingMessageLanguage, newMessage.trim())
+      
       await load()
       cancelMessageEdit()
       toast.success('Mensaje guardado')
-    } catch {
+    } catch (error) {
+      console.error('Error creating message:', error)
       toast.error('No se pudo guardar el mensaje')
     } finally {
       isLoading = false
@@ -107,7 +118,7 @@
     </button>
   </div>
 
-  {#if editingMessageIndex >= 0 || newMessage.length > 0}
+  {#if showCreateForm}
     <div class="message-form">
       <h4>{editingMessageIndex >= 0 ? 'Editar Mensaje' : 'Crear Nuevo Mensaje'}</h4>
       <div class="form-group">
