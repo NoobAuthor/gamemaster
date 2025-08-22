@@ -62,7 +62,6 @@
       "category": "public.app-category.games"
     },
     "win": {
-      "icon": "electron/icons/icon.svg",
       "target": "nsis",
       "publisherName": "Game Master"
     },
