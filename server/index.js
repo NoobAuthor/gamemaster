@@ -103,6 +103,38 @@ app.get('/api/config', (req, res) => {
   })
 })
 
+// Health check endpoint for debugging
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test database connection
+    const dbTest = await database.db.prepare('SELECT 1 as test').get()
+    const roomCount = await database.db.prepare('SELECT COUNT(*) as count FROM rooms').get()
+    const hintCount = await database.db.prepare('SELECT COUNT(*) as count FROM hints').get()
+    
+    res.json({
+      status: 'healthy',
+      database: {
+        connected: true,
+        test: dbTest,
+        rooms: roomCount.count,
+        hints: hintCount.count
+      },
+      timestamp: new Date().toISOString(),
+      platform: process.platform,
+      nodeVersion: process.version
+    })
+  } catch (error) {
+    console.error('❌ Health check failed:', error)
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+      platform: process.platform,
+      nodeVersion: process.version
+    })
+  }
+})
+
 // Get all rooms
 app.get('/api/rooms', async (req, res) => {
   try {
@@ -234,6 +266,8 @@ app.post('/api/rooms/:roomId/hints', async (req, res) => {
     const roomId = parseInt(req.params.roomId)
     const { text, category } = req.body
     
+    console.log('💡 Creating hint for room:', roomId, 'Data:', { text, category })
+    
     // Validation
     if (!text || !category) {
       return res.status(400).json({ 
@@ -253,11 +287,15 @@ app.post('/api/rooms/:roomId/hints', async (req, res) => {
       }
     }
 
+    console.log('💡 Processed text object:', textObj)
+
     const result = await database.createHintForRoom(roomId, {
       text: textObj,
       category,
       created_by: 'gamemaster'
     })
+
+    console.log('✅ Hint created successfully:', result)
 
     // Convert DB format to frontend format
     const newHint = {
@@ -277,7 +315,17 @@ app.post('/api/rooms/:roomId/hints', async (req, res) => {
     res.status(201).json(newHint)
   } catch (error) {
     console.error('❌ Error creating room hint:', error)
-    res.status(500).json({ error: 'Failed to create room hint' })
+    console.error('❌ Full error details:', {
+      message: error.message,
+      stack: error.stack,
+      roomId: req.params.roomId,
+      body: req.body
+    })
+    res.status(500).json({ 
+      error: 'Failed to create room hint',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    })
   }
 })
 
@@ -489,6 +537,8 @@ app.post('/api/hints', async (req, res) => {
   try {
     const { text, category } = req.body
     
+    console.log('💡 Creating general hint. Data:', { text, category })
+    
     // Validation
     if (!text || !category) {
       return res.status(400).json({ 
@@ -508,11 +558,15 @@ app.post('/api/hints', async (req, res) => {
       }
     }
 
+    console.log('💡 Processed text object:', textObj)
+
     const result = await database.createHint({
       text: textObj,
       category,
       created_by: 'gamemaster'
     })
+
+    console.log('✅ General hint created successfully:', result)
 
     // Convert DB format to frontend format
     const newHint = {
@@ -531,7 +585,16 @@ app.post('/api/hints', async (req, res) => {
     res.status(201).json(newHint)
   } catch (error) {
     console.error('❌ Error creating hint:', error)
-    res.status(500).json({ error: 'Failed to create hint' })
+    console.error('❌ Full error details:', {
+      message: error.message,
+      stack: error.stack,
+      body: req.body
+    })
+    res.status(500).json({ 
+      error: 'Failed to create hint',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    })
   }
 })
 
@@ -752,12 +815,59 @@ io.on('connection', (socket) => {
   // Send initial state
   socket.emit('initial-state', { rooms: gameRooms })
   
+  // Handle Game Master room joining
+  socket.on('join-game-master-room', (roomId) => {
+    console.log(`🎮 Game Master joined room ${roomId}:`, socket.id)
+    
+    // Leave all previous rooms except the default room
+    const currentRooms = Array.from(socket.rooms)
+    for (const room of currentRooms) {
+      if (room !== socket.id && room.startsWith('room-')) {
+        socket.leave(room)
+        console.log(`🎮 Game Master left room: ${room}`)
+      }
+    }
+    
+    // Join the new room
+    socket.join(`room-${roomId}`)
+    socket.gameMasterRoomId = roomId
+    
+    // Log room membership for debugging
+    const rooms = Array.from(socket.rooms)
+    console.log(`🎮 Game Master joined room ${roomId}, socket rooms:`, rooms)
+  })
+
   // Handle Chrome Cast TV window connections
   socket.on('join-tv-room', (roomId) => {
     console.log(`📺 Chrome Cast TV joined room ${roomId}:`, socket.id)
+    
+    // Join the room
     socket.join(`room-${roomId}`)
     socket.tvRoomId = roomId
     socket.isCasting = false // Initially not casting, just window open
+    
+    // Log room membership for debugging
+    const rooms = Array.from(socket.rooms)
+    console.log(`📱 TV window opened for room ${roomId}, socket rooms:`, rooms)
+    
+    // Verify room membership
+    const roomName = `room-${roomId}`
+    if (rooms.includes(roomName)) {
+      console.log(`✅ Successfully joined room: ${roomName}`)
+      
+      // Send a test event to verify communication
+      setTimeout(() => {
+        console.log(`🧪 Sending test event to room ${roomName}`)
+        io.to(roomName).emit('test-event', { 
+          message: 'Test event from server', 
+          timestamp: new Date().toISOString(),
+          roomId: roomId
+        })
+      }, 1000)
+      
+    } else {
+      console.log(`❌ Failed to join room: ${roomName}`)
+    }
     
     // Don't broadcast connection until actually casting
     console.log(`📱 TV window opened for room ${roomId}, waiting for cast status`)
@@ -821,6 +931,12 @@ io.on('connection', (socket) => {
     }
   })
 
+  // Debug event to track hint emissions
+  socket.on('debug-hint-emission', (data) => {
+    console.log('🐞 Debug hint emission from', data.clientType, ':', data)
+    console.log('🐞 Socket rooms:', Array.from(socket.rooms))
+  })
+
   // Handle hint sending
   socket.on('hint-sent', async (data) => {
     try {
@@ -831,21 +947,18 @@ io.on('connection', (socket) => {
         // Log hint usage for analytics
         await database.logHintUsage(data.roomId, data.hintId || 'custom', data.hint, data.language)
         
-        // Calculate if this hint requires time penalty
-        // Game master can send unlimited hints, but penalty applies when no free hints remaining
-        const freeHintsUsed = (room.free_hints_count || 3) - room.hints_remaining + 1
-        const isUsingFreeHint = room.hints_remaining > 0 && freeHintsUsed <= (room.free_hints_count || 3)
+        // Simplified hint logic:
+        // - If hints_remaining > 0, use a free hint and decrement count
+        // - If hints_remaining === 0, apply time penalty but don't decrement
+        const hasFreeHints = room.hints_remaining > 0
+        const newHintsRemaining = hasFreeHints ? room.hints_remaining - 1 : 0
         
-        // Apply time penalty if no free hints remaining or hints count is 0
+        // Apply time penalty if no free hints remaining
         let newTimeRemaining = room.time_remaining
-        if (!isUsingFreeHint) {
+        if (!hasFreeHints) {
           newTimeRemaining = Math.max(0, room.time_remaining - 120) // Subtract 2 minutes (120 seconds)
           console.log(`⏰ Time penalty applied: -2 minutes. New time: ${newTimeRemaining}`)
         }
-        
-        // Only decrement hints count if there are hints remaining
-        // Game master can send hints even when count is 0, but no decrement happens
-        const newHintsRemaining = room.hints_remaining > 0 ? Math.max(0, room.hints_remaining - 1) : 0
         
         // Update room hints count and time
         await database.updateRoom(data.roomId, {
@@ -857,7 +970,23 @@ io.on('connection', (socket) => {
         })
         
         const updatedRoom = await database.getRoom(data.roomId)
-        io.emit('hint-sent', { ...data, timePenaltyApplied: !isUsingFreeHint })
+        
+        // Broadcast hint to specific room (including Chrome Cast TV window)
+        const hintEventData = { ...data, timePenaltyApplied: !hasFreeHints }
+        const roomName = `room-${data.roomId}`
+        
+        // Debug: Check what clients are in the room
+        const roomClients = io.sockets.adapter.rooms.get(roomName)
+        if (roomClients) {
+          console.log(`📡 Room ${roomName} has ${roomClients.size} clients:`, Array.from(roomClients))
+        } else {
+          console.log(`⚠️ Room ${roomName} not found or empty`)
+        }
+        
+        console.log(`📡 Broadcasting hint to room ${data.roomId}:`, hintEventData)
+        io.to(roomName).emit('hint-sent', hintEventData)
+        
+        // Broadcast room update to all clients
         io.emit('room-updated', formatRoomForFrontend(updatedRoom))
       }
     } catch (error) {
@@ -882,7 +1011,22 @@ io.on('connection', (socket) => {
         })
         
         const updatedRoom = await database.getRoom(data.roomId)
-        io.emit('message-sent', data)
+        
+        // Broadcast message to specific room (including Chrome Cast TV window)
+        const roomName = `room-${data.roomId}`
+        
+        // Debug: Check what clients are in the room
+        const roomClients = io.sockets.adapter.rooms.get(roomName)
+        if (roomClients) {
+          console.log(`📡 Room ${roomName} has ${roomClients.size} clients:`, Array.from(roomClients))
+        } else {
+          console.log(`⚠️ Room ${roomName} not found or empty`)
+        }
+        
+        console.log(`📡 Broadcasting message to room ${data.roomId}:`, data)
+        io.to(roomName).emit('message-sent', data)
+        
+        // Broadcast room update to all clients
         io.emit('room-updated', formatRoomForFrontend(updatedRoom))
       }
     } catch (error) {

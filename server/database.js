@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
-
+import { existsSync, mkdirSync } from 'fs'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
@@ -22,17 +22,62 @@ class GameDatabase {
 
     try {
       console.log('🗄️ Initializing database at:', DATABASE_PATH)
+      
+      // Ensure the directory exists (especially important on Windows)
+      const dbDir = dirname(DATABASE_PATH)
+      if (!existsSync(dbDir)) {
+        console.log('📁 Creating database directory:', dbDir)
+        mkdirSync(dbDir, { recursive: true })
+      }
+      
+      // Check if database file exists
+      const dbExists = existsSync(DATABASE_PATH)
+      console.log('📄 Database file exists:', dbExists)
+      
       this.db = new Database(DATABASE_PATH)
       
       // Enable WAL mode for better performance
       this.db.pragma('journal_mode = WAL')
       
+      // On Windows, also set synchronous mode to NORMAL for better compatibility
+      if (process.platform === 'win32') {
+        this.db.pragma('synchronous = NORMAL')
+        console.log('🪟 Windows detected, set synchronous mode to NORMAL')
+      }
+      
       console.log('✅ Connected to SQLite database')
       this.createTables()
       this.isInitialized = true
+      
+      // Test database functionality
+      await this.testDatabase()
+      
     } catch (err) {
       console.error('❌ Error opening database:', err.message)
+      console.error('❌ Full error:', err)
       throw err
+    }
+  }
+
+  async testDatabase() {
+    try {
+      // Test basic database operations
+      const testResult = this.db.prepare('SELECT 1 as test').get()
+      console.log('✅ Database test query successful:', testResult)
+      
+      // Test if we can create a test table and insert data
+      this.db.prepare('CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY, test TEXT)').run()
+      this.db.prepare('INSERT OR REPLACE INTO test_table (id, test) VALUES (1, ?)').run('test_value')
+      const testInsert = this.db.prepare('SELECT * FROM test_table WHERE id = 1').get()
+      console.log('✅ Database insert/select test successful:', testInsert)
+      
+      // Clean up test table
+      this.db.prepare('DROP TABLE test_table').run()
+      console.log('✅ Database cleanup test successful')
+      
+    } catch (error) {
+      console.error('❌ Database test failed:', error.message)
+      throw error
     }
   }
 
@@ -364,32 +409,45 @@ class GameDatabase {
   }
 
   async createHint(hintData) {
-    const { text, category, created_by = 'gamemaster' } = hintData
-    const id = `custom_${Date.now()}`
-    
-    this.run(
-      `INSERT INTO hints (id, text_es, text_en, text_fr, text_de, category, created_by, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [
-        id,
-        text.es || 'Traducción pendiente',
-        text.en || text.es || 'Translation pending',
-        text.fr || text.es || 'Traduction en attente',
-        text.de || text.es || 'Übersetzung ausstehend',
-        category,
-        created_by
-      ]
-    )
+    try {
+      const { text, category, created_by = 'gamemaster' } = hintData
+      const id = `custom_${Date.now()}`
+      
+      console.log('💾 Creating hint with ID:', id, 'Category:', category, 'Text:', text)
+      
+      const result = this.run(
+        `INSERT INTO hints (id, text_es, text_en, text_fr, text_de, category, created_by, created_at, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [
+          id,
+          text.es || 'Traducción pendiente',
+          text.en || text.es || 'Translation pending',
+          text.fr || text.es || 'Traduction en attente',
+          text.de || text.es || 'Übersetzung ausstehend',
+          category,
+          created_by
+        ]
+      )
+      
+      console.log('✅ Hint insert result:', result)
 
-    // Store dynamic translations for non-core languages
-    const core = new Set(['es','en','fr','de'])
-    for (const [langCode, value] of Object.entries(text || {})) {
-      if (!core.has(langCode) && value && value.trim() !== '') {
-        this.addHintTranslation(id, langCode, value)
+      // Store dynamic translations for non-core languages
+      const core = new Set(['es','en','fr','de'])
+      for (const [langCode, value] of Object.entries(text || {})) {
+        if (!core.has(langCode) && value && value.trim() !== '') {
+          this.addHintTranslation(id, langCode, value)
+        }
       }
-    }
 
-    return this.get('SELECT * FROM hints WHERE id = ?', [id])
+      const createdHint = this.get('SELECT * FROM hints WHERE id = ?', [id])
+      console.log('✅ Created hint retrieved:', createdHint)
+      return createdHint
+      
+    } catch (error) {
+      console.error('❌ Error in createHint:', error.message)
+      console.error('❌ Full error:', error)
+      throw error
+    }
   }
 
   async deleteHint(id) {
@@ -468,32 +526,45 @@ class GameDatabase {
   }
 
   async createHintForRoom(roomId, hintData) {
-    const id = `room_${roomId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    this.run(
-      `INSERT INTO hints (id, room_id, text_es, text_en, text_fr, text_de, category, created_by, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-      [
-        id,
-        roomId,
-        hintData.text.es,
-        hintData.text.en || hintData.text.es,
-        hintData.text.fr || hintData.text.es,
-        hintData.text.de || hintData.text.es,
-        hintData.category,
-        hintData.created_by || 'gamemaster'
-      ]
-    )
+    try {
+      const id = `room_${roomId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log('💾 Creating room hint with ID:', id, 'Room:', roomId, 'Category:', hintData.category, 'Text:', hintData.text)
+      
+      const result = this.run(
+        `INSERT INTO hints (id, room_id, text_es, text_en, text_fr, text_de, category, created_by, created_at, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        [
+          id,
+          roomId,
+          hintData.text.es,
+          hintData.text.en || hintData.text.es,
+          hintData.text.fr || hintData.text.es,
+          hintData.text.de || hintData.text.es,
+          hintData.category,
+          hintData.created_by || 'gamemaster'
+        ]
+      )
+      
+      console.log('✅ Room hint insert result:', result)
 
-    // Save dynamic translations beyond core languages
-    const core = new Set(['es','en','fr','de'])
-    for (const [langCode, value] of Object.entries(hintData.text || {})) {
-      if (!core.has(langCode) && value && value.trim() !== '') {
-        this.addHintTranslation(id, langCode, value)
+      // Save dynamic translations beyond core languages
+      const core = new Set(['es','en','fr','de'])
+      for (const [langCode, value] of Object.entries(hintData.text || {})) {
+        if (!core.has(langCode) && value && value.trim() !== '') {
+          this.addHintTranslation(id, langCode, value)
+        }
       }
-    }
 
-    return this.get('SELECT * FROM hints WHERE id = ?', [id])
+      const createdHint = this.get('SELECT * FROM hints WHERE id = ?', [id])
+      console.log('✅ Created room hint retrieved:', createdHint)
+      return createdHint
+      
+    } catch (error) {
+      console.error('❌ Error in createHintForRoom:', error.message)
+      console.error('❌ Full error:', error)
+      throw error
+    }
   }
 
   // Room-specific messages methods

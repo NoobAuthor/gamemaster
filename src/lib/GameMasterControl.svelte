@@ -55,6 +55,10 @@
     socket.on('connect', () => {
       connected = true
       console.log('Conectado al servidor')
+      
+      // Join the initial room (room 0) by default
+      socket.emit('join-game-master-room', activeRoom)
+      console.log(`🎮 Game master connected and joined room ${activeRoom}`)
     })
 
     socket.on('disconnect', () => {
@@ -79,6 +83,10 @@
 
   function switchRoom(roomId: number) {
     activeRoom = roomId
+    
+    // Join the socket room for this active room to receive events
+    socket.emit('join-game-master-room', roomId)
+    console.log(`🎮 Game master switched to room ${roomId}`)
   }
 
   function updateRoom(room: Room) {
