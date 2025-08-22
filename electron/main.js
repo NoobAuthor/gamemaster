@@ -1,10 +1,20 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
-import pkg from 'electron-updater'
-const { autoUpdater } = pkg
 import os from 'os'
 import path from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
 import { execSync } from 'child_process'
+
+// Import electron-updater safely with error handling
+let autoUpdater = null
+async function initAutoUpdater() {
+  try {
+    const pkg = await import('electron-updater')
+    autoUpdater = pkg.autoUpdater
+    console.log('✅ Auto-updater loaded successfully')
+  } catch (error) {
+    console.warn('⚠️ electron-updater not available:', error.message)
+  }
+}
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -75,21 +85,43 @@ async function waitForServer(url, timeoutMs = 10000) {
 }
 
 async function startServer() {
-  const port = process.env.PORT || '3001'
-  // Ensure writable DB location for packaged apps
-  if (!process.env.GAMEMASTER_DB_PATH) {
-    const dbPath = path.join(app.getPath('userData'), 'gamemaster.db')
-    process.env.GAMEMASTER_DB_PATH = dbPath
-  }
-  process.env.NODE_ENV = 'production'
+  try {
+    const port = process.env.PORT || '3001'
+    
+    // Ensure writable DB location for packaged apps
+    if (!process.env.GAMEMASTER_DB_PATH) {
+      const userDataPath = app.getPath('userData')
+      const dbPath = path.join(userDataPath, 'gamemaster.db')
+      
+      console.log('🗄️ Database path:', dbPath)
+      console.log('📁 User data path:', userDataPath)
+      
+      // Ensure user data directory exists
+      const fs = await import('fs')
+      if (!fs.existsSync(userDataPath)) {
+        fs.mkdirSync(userDataPath, { recursive: true })
+        console.log('📁 Created user data directory')
+      }
+      
+      process.env.GAMEMASTER_DB_PATH = dbPath
+    }
+    
+    process.env.NODE_ENV = 'production'
+    console.log('🚀 Starting server on port', port)
 
-  const serverEntry = path.resolve(__dirname, '../server/index.js')
-  await import(pathToFileURL(serverEntry).href)
-  const healthy = await waitForServer(`http://127.0.0.1:${port}/api/health`, 15000)
-  if (!healthy) {
-    // Continue anyway; UI will still show URLs
-    // eslint-disable-next-line no-console
-    console.error('Server did not report healthy within timeout')
+    const serverEntry = path.resolve(__dirname, '../server/index.js')
+    await import(pathToFileURL(serverEntry).href)
+    
+    const healthy = await waitForServer(`http://127.0.0.1:${port}/api/health`, 15000)
+    if (!healthy) {
+      // Continue anyway; UI will still show URLs
+      console.warn('⚠️ Server did not report healthy within timeout, but continuing...')
+    } else {
+      console.log('✅ Server is healthy and ready')
+    }
+  } catch (error) {
+    console.error('❌ Failed to start server:', error)
+    throw error
   }
 }
 
@@ -112,9 +144,11 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'ui.html'))
 }
 
-// Configure auto-updater
-autoUpdater.checkForUpdatesAndNotify = false // We'll handle this manually
-autoUpdater.autoDownload = false // Don't auto-download, let user choose
+// Configure auto-updater if available
+if (autoUpdater) {
+  autoUpdater.checkForUpdatesAndNotify = false // We'll handle this manually
+  autoUpdater.autoDownload = false // Don't auto-download, let user choose
+}
 
 // Register IPC handlers once
 const port = process.env.PORT || '3001'
@@ -131,6 +165,9 @@ try {
   
   // Update handlers
   ipcMain.handle('check-for-updates', async () => {
+    if (!autoUpdater) {
+      return { available: false, version: null, error: 'Auto-updater not available' }
+    }
     try {
       const result = await autoUpdater.checkForUpdates()
       return { 
@@ -144,6 +181,9 @@ try {
   })
   
   ipcMain.handle('download-update', async () => {
+    if (!autoUpdater) {
+      return { success: false, error: 'Auto-updater not available' }
+    }
     try {
       await autoUpdater.downloadUpdate()
       return { success: true, error: null }
@@ -153,21 +193,46 @@ try {
   })
   
   ipcMain.handle('install-update', () => {
-    autoUpdater.quitAndInstall()
-    return { success: true }
+    if (!autoUpdater) {
+      return { success: false, error: 'Auto-updater not available' }
+    }
+    try {
+      autoUpdater.quitAndInstall()
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: e.message }
+    }
   })
 } catch {}
 
-app.whenReady().then(async () => {
-  const port = process.env.PORT || '3001'
-  // Start server first
-  await startServer()
-  // Create UI window
-  createWindow()
+// Add process error handling
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error)
+  // Don't exit immediately, try to handle gracefully
+})
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason)
+})
+
+app.whenReady().then(async () => {
+  try {
+    // Initialize auto-updater after app is ready
+    await initAutoUpdater()
+    
+    const port = process.env.PORT || '3001'
+    // Start server first
+    await startServer()
+    // Create UI window
+    createWindow()
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  } catch (error) {
+    console.error('❌ Failed to start application:', error)
+    app.quit()
+  }
 })
 
 app.on('window-all-closed', () => {

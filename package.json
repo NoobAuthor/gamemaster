@@ -14,7 +14,8 @@
     "start": "npm run server",
     "app:dev": "npm run build && electron electron/main.js",
     "app:pack": "npm run build && electron-builder --dir",
-    "app:dist": "npm run build && electron-builder"
+    "app:dist": "npm run build && electron-builder",
+    "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
@@ -22,7 +23,6 @@
     "concurrently": "^8.2.0",
     "electron": "^31.3.0",
     "electron-builder": "^24.13.3",
-    "electron-updater": "^6.1.7",
     "nodemon": "^3.0.0",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
@@ -30,14 +30,14 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
+    "electron-updater": "^6.1.7",
     "express": "^4.18.0",
     "lucide-svelte": "^0.400.0",
     "socket.io": "^4.7.0",
-    "socket.io-client": "^4.7.0",
-    "sqlite3": "^5.1.7"
+    "socket.io-client": "^4.7.0"
   },
-  "postinstall": "electron-builder install-app-deps",
   "build": {
     "appId": "com.escaperoom.gamemaster",
     "productName": "Game Master",
@@ -53,14 +53,16 @@
       "owner": "GITHUB_USERNAME",
       "repo": "GITHUB_REPO_NAME"
     },
-    "mac": { 
+    "mac": {
       "target": "dmg",
       "category": "public.app-category.games"
     },
-    "win": { 
+    "win": {
       "target": "nsis",
       "publisherName": "Game Master"
     },
-    "linux": { "target": "AppImage" }
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
