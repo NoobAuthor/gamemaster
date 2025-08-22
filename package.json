@@ -41,6 +41,9 @@
   "build": {
     "appId": "com.escaperoom.gamemaster",
     "productName": "Game Master",
+    "directories": {
+      "output": "dist-electron"
+    },
     "files": [
       "dist/**",
       "server/**",
@@ -54,14 +57,17 @@
       "repo": "gamemaster"
     },
     "mac": {
+      "icon": "electron/icons/icon.svg",
       "target": "dmg",
       "category": "public.app-category.games"
     },
     "win": {
+      "icon": "electron/icons/icon.svg",
       "target": "nsis",
       "publisherName": "Game Master"
     },
     "linux": {
+      "icon": "electron/icons/icon.svg",
       "target": "AppImage"
     }
   }

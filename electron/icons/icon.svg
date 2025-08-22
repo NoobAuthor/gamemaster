@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="32" height="32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="512" height="512">
   <!-- Background -->
   <defs>
     <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -21,7 +21,7 @@
   <circle cx="200" cy="200" r="200" fill="url(#bgGradient)"/>
   
   <!-- Headset with microphone (top-left) -->
-  <g transform="translate(80, 80)" class="glow">
+  <g transform="translate(80, 80)">
     <!-- Headband -->
     <path d="M 15 25 Q 40 5, 65 25" fill="none" stroke="url(#iconGradient)" stroke-width="8" stroke-linecap="round"/>
     <!-- Left ear cup -->
@@ -35,7 +35,7 @@
   </g>
   
   <!-- Game controller (bottom-left) -->
-  <g transform="translate(60, 260)" class="glow">
+  <g transform="translate(60, 260)">
     <!-- Controller body -->
     <path d="M 20 15 Q 10 10, 15 25 L 15 35 Q 15 45, 25 45 L 55 45 Q 65 45, 65 35 L 65 25 Q 70 10, 60 15 Z" fill="url(#iconGradient)"/>
     <!-- D-pad -->
@@ -49,7 +49,7 @@
   </g>
   
   <!-- Gear/Settings (center) -->
-  <g transform="translate(175, 175)" class="glow">
+  <g transform="translate(175, 175)">
     <!-- Main gear body -->
     <circle cx="25" cy="25" r="20" fill="url(#iconGradient)"/>
     <!-- Inner circle -->
@@ -68,7 +68,7 @@
   </g>
   
   <!-- Door with keyhole (top-right) -->
-  <g transform="translate(280, 70)" class="glow">
+  <g transform="translate(280, 70)">
     <!-- Door frame -->
     <rect x="10" y="10" width="50" height="70" rx="5" fill="url(#iconGradient)"/>
     <!-- Door panel -->
@@ -79,23 +79,7 @@
   </g>
   
   <!-- GMS Text -->
-  <g transform="translate(200, 340)" class="glow">
+  <g transform="translate(200, 340)">
     <text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="48" font-weight="800" text-anchor="middle" fill="url(#accentGradient)">GMS</text>
   </g>
-  
-  <!-- Subtle glow effects -->
-  <defs>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-      <feMerge> 
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-  </defs>
-  
-  <!-- Apply glow to all main elements -->
-  <style>
-    .glow { filter: url(#glow); }
-  </style>
 </svg>

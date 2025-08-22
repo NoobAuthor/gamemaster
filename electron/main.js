@@ -160,6 +160,7 @@ function createWindow() {
     height: 380,
     resizable: true,
     title: 'Game Master Launcher',
+    icon: path.join(__dirname, 'icons', 'icon.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
