@@ -931,18 +931,11 @@ io.on('connection', (socket) => {
     }
   })
 
-  // Debug event to track hint emissions
-  socket.on('debug-hint-emission', (data) => {
-    console.log('🐞 Debug hint emission from', data.clientType, ':', data)
-    console.log('🐞 Socket rooms:', Array.from(socket.rooms))
-  })
-
   // Handle hint sending
   socket.on('hint-sent', async (data) => {
     try {
-      console.log('💡 Hint sent to room:', data.roomId, '- Hint:', data.hint)
-      
       const room = await database.getRoom(data.roomId)
+      
       if (room) {
         // Log hint usage for analytics
         await database.logHintUsage(data.roomId, data.hintId || 'custom', data.hint, data.language)
@@ -957,7 +950,6 @@ io.on('connection', (socket) => {
         let newTimeRemaining = room.time_remaining
         if (!hasFreeHints) {
           newTimeRemaining = Math.max(0, room.time_remaining - 120) // Subtract 2 minutes (120 seconds)
-          console.log(`⏰ Time penalty applied: -2 minutes. New time: ${newTimeRemaining}`)
         }
         
         // Update room hints count and time
@@ -975,23 +967,31 @@ io.on('connection', (socket) => {
         const hintEventData = { ...data, timePenaltyApplied: !hasFreeHints }
         const roomName = `room-${data.roomId}`
         
-        // Debug: Check what clients are in the room
-        const roomClients = io.sockets.adapter.rooms.get(roomName)
-        if (roomClients) {
-          console.log(`📡 Room ${roomName} has ${roomClients.size} clients:`, Array.from(roomClients))
-        } else {
-          console.log(`⚠️ Room ${roomName} not found or empty`)
-        }
-        
-        console.log(`📡 Broadcasting hint to room ${data.roomId}:`, hintEventData)
         io.to(roomName).emit('hint-sent', hintEventData)
+        
+        // Send acknowledgment back to the sender
+        socket.emit('hint-processed', {
+          roomId: data.roomId,
+          hintId: data.hintId,
+          success: true,
+          timestamp: new Date().toISOString()
+        })
         
         // Broadcast room update to all clients
         io.emit('room-updated', formatRoomForFrontend(updatedRoom))
+      } else {
+        socket.emit('hint-error', {
+          message: `Room ${data.roomId} not found`,
+          roomId: data.roomId,
+          timestamp: new Date().toISOString()
+        })
       }
     } catch (error) {
-      console.error('❌ Error sending hint:', error)
-      socket.emit('error', { message: 'Failed to send hint' })
+      socket.emit('hint-error', {
+        message: 'Failed to send hint: ' + error.message,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      })
     }
   })
 

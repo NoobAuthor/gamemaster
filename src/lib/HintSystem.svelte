@@ -4,6 +4,7 @@
   import { getRoomHints, getRoomCategories, reorderRoomCategories, reorderRoomHints } from './api'
   import type { Room, Language, Hint } from './types'
   import Modal from './Modal.svelte'
+  import { toast } from './toast'
 
   export let room: Room
   export let currentLanguage: Language
@@ -47,6 +48,15 @@
 
   onMount(async () => {
     currentRoomId = room.id
+    
+    // Listen for server acknowledgment of hints
+    socket.on('hint-processed', (data) => {
+      toast.info(`✅ Servidor confirmó recepción de pista`)
+    })
+    
+    socket.on('hint-error', (error) => {
+      toast.error(`❌ Error del servidor: ${error.message}`)
+    })
     
     // Initialize customHintByRoom for this room if it doesn't exist
     if (room.id !== undefined && !(room.id in customHintByRoom)) {
@@ -120,7 +130,6 @@
   function sendHint(hintText: string, hintId?: string) {
     // Safety check for room ID
     if (!room || room.id === undefined) {
-      console.error('❌ Room ID is undefined, cannot send hint')
       return
     }
     
@@ -137,6 +146,9 @@
 
     // Emit the hint to the server
     socket.emit('hint-sent', eventData)
+    
+    // Show visual feedback
+    toast.success(`Pista enviada: "${hintText}"`)
 
     // Dispatch local event for UI updates
     dispatch('hint-sent', { hint: hintText, language: currentLanguage })
@@ -149,7 +161,6 @@
   function sendCustomHint() {
     // Safety check for room ID
     if (!room || room.id === undefined) {
-      console.error('❌ Room ID is undefined, cannot send hint')
       return
     }
     
@@ -159,7 +170,7 @@
       sendHint(currentHint)
       
       // Clear custom hint input and switch back to library view after sending
-      setCustomHint('')
+      setCurrentCustomHint('')
       showCustomHint = false
     }
   }
@@ -196,6 +207,7 @@
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       const currentHint = customHintByRoom[room.id] || ''
+      
       if (currentHint && currentHint.trim()) {
         sendCustomHint()
       }
@@ -863,4 +875,6 @@
     background: currentColor;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cline x1='22' y1='2' x2='11' y2='13'%3E%3C/line%3E%3Cpolygon points='22,2 15,22 11,13 2,9 22,2'%3E%3C/polygon%3E%3C/svg%3E") center/contain no-repeat;
   }
+
+
 </style>

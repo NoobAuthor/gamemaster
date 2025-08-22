@@ -458,9 +458,12 @@ class GameDatabase {
 
   // Analytics operations
   async logHintUsage(roomId, hintId, hintText, language) {
+    // For custom hints, set hint_id to null to avoid foreign key constraint
+    const actualHintId = (hintId === 'custom' || hintId === 'debug-test') ? null : hintId
+    
     this.run(
       'INSERT INTO hint_usage (room_id, hint_id, hint_text, language) VALUES (?, ?, ?, ?)',
-      [roomId, hintId, hintText, language]
+      [roomId, actualHintId, hintText, language]
     )
   }
 

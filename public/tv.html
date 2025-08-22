@@ -972,6 +972,7 @@
                 const title = timePenaltyApplied
                     ? "🧩 PISTA (-2 min)"
                     : "🧩 NUEVA PISTA";
+                
                 showNotification("hint", hintText, title);
                 
                 // Only play sound if sound is enabled
@@ -1221,7 +1222,6 @@
 
                 // Join the specific room for this TV window
                 socket.emit('join-tv-room', roomId);
-                console.log(`📺 TV window joined room ${roomId}`);
 
                 // Fetch current room data when connected
                 fetchInitialRoomData();
@@ -1263,13 +1263,8 @@
             });
 
             socket.on("hint-sent", (data) => {
-                console.log("💡 Hint received:", data.hintId || 'custom', "for room", data.roomId);
-                
                 if (data.roomId === roomId) {
-                    console.log("💡 Displaying hint:", data.hint);
                     showHint(data.hint, data.timePenaltyApplied);
-                } else {
-                    console.log("⚠️ Hint for different room:", data.roomId, "this room:", roomId);
                 }
             });
 
@@ -1307,10 +1302,7 @@
             
             // Test event listener to verify server communication
             socket.on("test-event", (data) => {
-                console.log("🧪 Test event received:", data);
                 if (data.roomId === roomId) {
-                    console.log("✅ Test event matches this room, communication working!");
-                    // Show a brief test notification
                     showNotification("test", "Test event received successfully", "🧪 TEST");
                 }
             });
