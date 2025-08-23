@@ -942,13 +942,15 @@ io.on('connection', (socket) => {
         
         // Simplified hint logic:
         // - If hints_remaining > 0, use a free hint and decrement count
-        // - If hints_remaining === 0, apply time penalty but don't decrement
+        // - If hints_remaining === 0 AND it's not a custom hint, apply time penalty but don't decrement
+        // - Custom hints (hintId === 'custom') never apply time penalty
+        const isCustomHint = data.hintId === 'custom'
         const hasFreeHints = room.hints_remaining > 0
         const newHintsRemaining = hasFreeHints ? room.hints_remaining - 1 : 0
         
-        // Apply time penalty if no free hints remaining
+        // Apply time penalty if no free hints remaining AND it's not a custom hint
         let newTimeRemaining = room.time_remaining
-        if (!hasFreeHints) {
+        if (!hasFreeHints && !isCustomHint) {
           newTimeRemaining = Math.max(0, room.time_remaining - 120) // Subtract 2 minutes (120 seconds)
         }
         
@@ -964,7 +966,7 @@ io.on('connection', (socket) => {
         const updatedRoom = await database.getRoom(data.roomId)
         
         // Broadcast hint to specific room (including Chrome Cast TV window)
-        const hintEventData = { ...data, timePenaltyApplied: !hasFreeHints }
+        const hintEventData = { ...data, timePenaltyApplied: !hasFreeHints && !isCustomHint }
         const roomName = `room-${data.roomId}`
         
         io.to(roomName).emit('hint-sent', hintEventData)

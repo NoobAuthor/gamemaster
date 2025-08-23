@@ -50,11 +50,11 @@
     currentRoomId = room.id
     
     // Listen for server acknowledgment of hints
-    socket.on('hint-processed', (data) => {
+    socket.on('hint-processed', (data: { roomId: number, hintId: string, success: boolean, timestamp: string }) => {
       toast.info(`✅ Servidor confirmó recepción de pista`)
     })
     
-    socket.on('hint-error', (error) => {
+    socket.on('hint-error', (error: { message: string }) => {
       toast.error(`❌ Error del servidor: ${error.message}`)
     })
     
@@ -365,6 +365,8 @@
       <div class="hints-container">
           {#each orderedCategoryNames as catName, catIndex}
             <div class="category-section"
+                 role="button"
+                 tabindex="0"
                  draggable
                  on:dragstart={(e) => onCategoryDragStart(e, catIndex)}
                  on:dragover|preventDefault

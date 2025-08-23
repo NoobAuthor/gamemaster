@@ -73,6 +73,14 @@ export async function createRoomHint(roomId: number, payload: { text: Record<str
   return r.json()
 }
 
+export async function updateHint(hintId: string, payload: { text: Record<string, string>; category: string }) {
+  const r = await fetch(`${BASE}/api/hints/${hintId}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+  })
+  if (!r.ok) throw new Error('Failed to update hint')
+  return r.json()
+}
+
 export async function deleteHint(hintId: string) {
   const r = await fetch(`${BASE}/api/hints/${hintId}`, { method: 'DELETE' })
   if (!r.ok) throw new Error('Failed to delete hint')

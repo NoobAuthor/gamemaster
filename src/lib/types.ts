@@ -36,6 +36,8 @@ export interface SocketEvents {
   'room-updated': (room: Room) => void
   'time-sync': (data: { roomId: number, timeRemaining: number, isRunning: boolean }) => void
   'hint-sent': (data: { roomId: number, hint: string, language: Language, isQuickMessage?: boolean }) => void
+  'hint-processed': (data: { roomId: number, hintId: string, success: boolean, timestamp: string }) => void
+  'hint-error': (error: { message: string }) => void
   'message-sent': (data: { roomId: number, message: string, language: Language, isQuickMessage?: boolean }) => void
   'reset-room': (roomId: number) => void
   'chromecast-status-change': (data: { roomId: number, connected: boolean, timestamp: string }) => void
