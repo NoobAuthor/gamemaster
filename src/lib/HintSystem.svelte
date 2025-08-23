@@ -416,7 +416,7 @@
         on:click={sendCustomHint}
       >
         <span class="btn-icon send-icon"></span>
-        Enviar Pista Personalizada
+        Enviar
       </button>
     </div>
   {/if}
@@ -558,7 +558,7 @@
     background: var(--glass-bg);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: var(--text-secondary);
-    padding: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     cursor: pointer;
     font-weight: 600;
@@ -568,6 +568,8 @@
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
+    line-height: 1;
+    min-width: 0;
     text-transform: uppercase;
     letter-spacing: 0.025em;
     backdrop-filter: blur(10px);
@@ -581,6 +583,7 @@
     color: var(--text-primary);
     border-color: var(--accent-blue);
     box-shadow: var(--shadow-md);
+    white-space: nowrap;
   }
 
   .type-btn:hover {
@@ -663,23 +666,17 @@
     position: relative;
   }
 
+  /* Remove warning badge and disable animation for penalty-warning hints */
   .hint-card.penalty-warning::before {
-    content: '⚠️ -2 min';
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #ff6b3d;
-    color: white;
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: bold;
+    display: none !important;
   }
 
   .hint-card.penalty-warning:hover {
     background: rgba(255, 107, 61, 0.15);
     border-color: #ff6b3d;
   }
+
+
 
   .hint-preview {
     font-size: 0.9rem;

@@ -243,7 +243,7 @@
         on:click={sendCustomMessage}
       >
         <span class="btn-icon send-icon"></span>
-        Enviar Mensaje Personalizado
+        Enviar
       </button>
     </div>
   {/if}
@@ -287,16 +287,18 @@
     background: var(--glass-bg);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: var(--text-secondary);
-    padding: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
+    line-height: 1;
+    min-width: 0;
     text-transform: uppercase;
     letter-spacing: 0.025em;
     backdrop-filter: blur(10px);
@@ -308,6 +310,7 @@
     color: var(--text-primary);
     border-color: var(--accent-blue);
     box-shadow: var(--shadow-md);
+    white-space: nowrap;
   }
 
   .type-btn:hover {
@@ -376,15 +379,18 @@
   .quick-messages {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
     margin-bottom: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
   }
 
   .quick-message-btn {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: white;
-    padding: 0.75rem;
+    padding: 1rem;
     border-radius: 8px;
     cursor: pointer;
     text-align: left;
@@ -453,7 +459,7 @@
 
   @media (max-width: 768px) {
     .quick-messages {
-      max-height: 150px;
+      max-height: 200px;
       overflow-y: auto;
     }
 
@@ -468,6 +474,12 @@
     height: 16px;
     display: inline-block;
     position: relative;
+  }
+
+  /* Smaller icons for type buttons */
+  .type-btn .btn-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .library-icon::before {
@@ -504,5 +516,24 @@
     height: 16px;
     background: currentColor;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cline x1='22' y1='2' x2='11' y2='13'%3E%3C/line%3E%3Cpolygon points='22,2 15,22 11,13 2,9 22,2'%3E%3C/polygon%3E%3C/svg%3E") center/contain no-repeat;
+  }
+
+  /* Custom scrollbar for quick messages */
+  .quick-messages::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .quick-messages::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+
+  .quick-messages::-webkit-scrollbar-thumb {
+    background: rgba(0, 212, 255, 0.6);
+    border-radius: 4px;
+  }
+
+  .quick-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 212, 255, 0.8);
   }
 </style>
