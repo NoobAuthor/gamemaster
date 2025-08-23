@@ -138,7 +138,22 @@
     const currentMessage = customMessageByRoom[room.id] || ''
     
     if (currentMessage && currentMessage.trim()) {
-      sendMessage(currentMessage)
+      // Send custom message with isQuickMessage flag to show notification popup
+      const messageData = {
+        message: currentMessage,
+        timestamp: new Date(),
+        language: currentLanguage,
+        isQuickMessage: true
+      }
+      
+      socket.emit('message-sent', {
+        roomId: room.id,
+        message: currentMessage,
+        language: currentLanguage,
+        isQuickMessage: true
+      })
+
+      dispatch('message-sent', messageData)
       
       // Clear custom message input and switch back to predefined view after sending
       customMessageByRoom[room.id] = ''
