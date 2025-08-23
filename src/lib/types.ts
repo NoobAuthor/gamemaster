@@ -40,6 +40,7 @@ export interface SocketEvents {
   'hint-error': (error: { message: string }) => void
   'message-sent': (data: { roomId: number, message: string, language: Language, isQuickMessage?: boolean }) => void
   'reset-room': (roomId: number) => void
+  'room-reset': (roomId: number) => void
   'chromecast-status-change': (data: { roomId: number, connected: boolean, timestamp: string }) => void
   'connect': () => void
   'disconnect': () => void

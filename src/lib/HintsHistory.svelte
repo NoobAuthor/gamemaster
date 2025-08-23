@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte'
-  import { getRoomHintHistory, clearRoomHintHistory } from './api'
+  import { getRoomHintHistory } from './api'
+  import { socket } from './socket'
   import type { Room, Language } from './types'
-  import { toast } from './toast'
 
   export let room: Room
   export let currentLanguage: Language
@@ -21,9 +21,28 @@
   let loadingHistory = true
   let currentRoomId: number | undefined = undefined
 
+  // Expose refresh function for parent component
+  export function refreshHistory() {
+    loadHintHistory()
+  }
+
+  // Expose clear function for parent component (instant UI clear)
+  export function clearLocalHistory() {
+    hintHistory = []
+  }
+
   onMount(async () => {
     currentRoomId = room.id
     await loadHintHistory()
+
+    // Listen for room reset events to refresh history (handles resets from other clients)
+    socket.on('room-reset', (resetRoomId: number) => {
+      if (resetRoomId === room.id) {
+        hintHistory = []
+        // slight delay to allow server DB clear
+        setTimeout(() => loadHintHistory(), 400)
+      }
+    })
   })
 
   // Reactive statement to reload history when room ID changes
@@ -44,20 +63,7 @@
     }
   }
 
-  async function clearHistory() {
-    if (!confirm('¿Estás seguro de que quieres borrar todo el historial de pistas de esta sala?')) {
-      return
-    }
 
-    try {
-      await clearRoomHintHistory(room.id)
-      hintHistory = []
-      toast.success('Historial de pistas borrado')
-    } catch (error) {
-      console.error('❌ Error clearing hint history:', error)
-      toast.error('No se pudo borrar el historial')
-    }
-  }
 
   function formatTime(dateString: string): string {
     const date = new Date(dateString)
@@ -102,12 +108,6 @@
       <h3>Historial de Pistas</h3>
       <span class="language-badge">{currentLanguage.toUpperCase()}</span>
     </div>
-    {#if hintHistory.length > 0}
-      <button class="clear-history-btn" on:click={clearHistory}>
-        <span class="btn-icon trash-icon"></span>
-        Borrar Historial
-      </button>
-    {/if}
   </div>
 
   <div class="history-content">
@@ -192,28 +192,7 @@
     border: 1px solid rgba(0, 212, 255, 0.3);
   }
 
-  .clear-history-btn {
-    background: rgba(255, 87, 87, 0.1);
-    color: var(--accent-red);
-    border: 1px solid var(--accent-red);
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-  }
 
-  .clear-history-btn:hover {
-    background: rgba(255, 87, 87, 0.2);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-  }
 
   .history-content {
     min-height: 200px;
@@ -373,38 +352,10 @@
     font-size: 0.8rem;
   }
 
-  /* Icon styles */
-  .btn-icon {
-    width: 14px;
-    height: 14px;
-    display: inline-block;
-    position: relative;
-  }
 
-  .trash-icon::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 14px;
-    height: 14px;
-    background: currentColor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpolyline points='3,6 5,6 21,6'%3E%3C/polyline%3E%3Cpath d='M19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2'%3E%3C/path%3E%3Cline x1='10' y1='11' x2='10' y2='17'%3E%3C/line%3E%3Cline x1='14' y1='11' x2='14' y2='17'%3E%3C/line%3E%3C/svg%3E") center/contain no-repeat;
-  }
 
   @media (max-width: 768px) {
-    .history-header {
-      flex-direction: column;
-      gap: var(--space-md);
-      align-items: stretch;
-    }
-
     .history-title {
-      justify-content: center;
-    }
-
-    .clear-history-btn {
       justify-content: center;
     }
 

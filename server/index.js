@@ -621,13 +621,33 @@ app.put('/api/hints/:id', async (req, res) => {
       }
     }
 
+    // Ensure core language fallbacks to avoid NULL constraint issues
+    const finalText = {
+      es: (textObj.es || '').trim() || 'Traducción pendiente',
+      en: (textObj.en || '').trim() || (textObj.es || '').trim() || 'Translation pending',
+      fr: (textObj.fr || '').trim() || (textObj.es || '').trim() || 'Traduction en attente',
+      de: (textObj.de || '').trim() || (textObj.es || '').trim() || 'Übersetzung ausstehend'
+    }
+
     await database.run(
       `UPDATE hints SET 
        text_es = ?, text_en = ?, text_fr = ?, text_de = ?, 
        category = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [textObj.es, textObj.en, textObj.fr, textObj.de, category, hintId]
+      [finalText.es, finalText.en, finalText.fr, finalText.de, category, hintId]
     )
+
+    // Persist dynamic language translations beyond core languages
+    try {
+      const core = new Set(['es','en','fr','de'])
+      for (const [langCode, value] of Object.entries(textObj || {})) {
+        if (!core.has(langCode) && typeof value === 'string' && value.trim() !== '') {
+          database.addHintTranslation(hintId, langCode, value.trim())
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Warning: Failed to upsert some dynamic translations for hint', hintId, e?.message)
+    }
 
     const updatedHint = await database.get('SELECT * FROM hints WHERE id = ?', [hintId])
     if (updatedHint) {

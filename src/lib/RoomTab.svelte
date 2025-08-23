@@ -15,6 +15,9 @@
   
   // Modal states
   let showResetModal = false
+  
+  // Reference to hints history component
+  let hintsHistoryComponent: any
 
   // Timer logic moved to server-side for proper synchronization
 
@@ -31,6 +34,14 @@
     
     socket.emit('reset-room', room.id)
     dispatch('room-update', room)
+
+    // Immediately clear local hints history UI and refresh after server reset
+    if (hintsHistoryComponent) {
+      hintsHistoryComponent.clearLocalHistory()
+      setTimeout(() => {
+        hintsHistoryComponent.refreshHistory()
+      }, 600)
+    }
   }
 
   function onTimerUpdate(event: CustomEvent) {
@@ -42,6 +53,14 @@
     // The server handles hint count decrement and broadcasts room updates
     // No need to manually decrement here as it causes double-decrement
     dispatch('room-update', room)
+    
+    // Refresh hints history after a hint is sent
+    if (hintsHistoryComponent) {
+      // Add a small delay to ensure the server has processed the hint
+      setTimeout(() => {
+        hintsHistoryComponent.refreshHistory()
+      }, 500)
+    }
   }
 
   function onMessageSent(event: CustomEvent) {
@@ -73,6 +92,7 @@
         on:hint-sent={onHintSent}
       />
       <HintsHistory 
+        bind:this={hintsHistoryComponent}
         bind:room 
         {currentLanguage}
       />
