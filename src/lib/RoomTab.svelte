@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte'
   import TimerControl from './TimerControl.svelte'
   import HintSystem from './HintSystem.svelte'
+  import HintsHistory from './HintsHistory.svelte'
   import MessageSystem from './MessageSystem.svelte'
   import Modal from './Modal.svelte'
   import { socket } from './socket'
@@ -71,6 +72,10 @@
         {currentLanguage} 
         on:hint-sent={onHintSent}
       />
+      <HintsHistory 
+        bind:room 
+        {currentLanguage}
+      />
     </div>
 
     <!-- Columna derecha: Mensajes y estado -->
@@ -101,6 +106,7 @@
     <li>Pistas disponibles (3)</li>
     <li>Estado del temporizador (pausado)</li>
     <li>Mensajes y jugadores</li>
+    <li>Historial de pistas utilizadas</li>
   </ul>
 </Modal>
 

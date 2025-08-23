@@ -492,23 +492,7 @@
                 }
             }
 
-            .last-message {
-                max-width: 60%;
-                text-align: center;
-            }
 
-            .message-text {
-                font-size: 1.125rem;
-                font-style: italic;
-                font-weight: 500;
-                color: var(--text-primary);
-                background: var(--glass-bg);
-                padding: var(--space-lg) var(--space-xl);
-                border-radius: var(--radius-lg);
-                border: 1px solid var(--accent-blue);
-                backdrop-filter: blur(10px);
-                box-shadow: 0 0 20px rgba(100, 217, 255, 0.15);
-            }
 
             .time-up-overlay {
                 position: absolute;
@@ -787,9 +771,6 @@
                     <div class="connection-dot" id="connectionDot"></div>
                     <span id="connectionText">Conectado</span>
                 </div>
-                <div class="last-message" id="lastMessage">
-                    <!-- El último mensaje se mostrará aquí -->
-                </div>
                 <button
                     class="sound-toggle"
                     id="soundToggle"
@@ -817,7 +798,7 @@
             const hintsDisplay = document.getElementById("hintsDisplay");
             const connectionDot = document.getElementById("connectionDot");
             const connectionText = document.getElementById("connectionText");
-            const lastMessage = document.getElementById("lastMessage");
+            // const lastMessage = document.getElementById("lastMessage"); // Removed - no longer needed
             const timeUpOverlay = document.getElementById("timeUpOverlay");
             const notificationOverlay = document.getElementById(
                 "notificationOverlay",
@@ -909,11 +890,9 @@
             }
 
             function updateLastMessage(message) {
-                if (message && message.trim()) {
-                    lastMessage.innerHTML = `<div class="message-text">"${message}"</div>`;
-                } else {
-                    lastMessage.innerHTML = "";
-                }
+                // Function kept for compatibility but no longer displays messages in footer
+                // Messages now only show as notification popups
+                console.log("📝 Last message updated:", message);
             }
 
             function updateConnectionStatus(connected) {
@@ -1290,8 +1269,8 @@
                     // Reset all visual states
                     timeUpOverlay.style.display = "none";
 
-                    // Clear last message
-                    updateLastMessage("");
+                    // Clear last message (no longer needed - messages only show as popups)
+                    // updateLastMessage("");
 
                     // Fetch fresh room data to ensure sync
                     fetchInitialRoomData();

@@ -166,4 +166,17 @@ export async function deleteRoomCategory(roomId: number, name: string) {
   return r.json()
 }
 
+// Hint History API
+export async function getRoomHintHistory(roomId: number) {
+  const r = await fetch(`${BASE}/api/rooms/${roomId}/hint-history`)
+  if (!r.ok) throw new Error('Failed to load hint history')
+  return r.json() as Promise<Array<{ id: number; hint_id: string; hint_text: string; language: string; sent_at: string }>>
+}
+
+export async function clearRoomHintHistory(roomId: number) {
+  const r = await fetch(`${BASE}/api/rooms/${roomId}/hint-history`, { method: 'DELETE' })
+  if (!r.ok) throw new Error('Failed to clear hint history')
+  return r.json()
+}
+
 

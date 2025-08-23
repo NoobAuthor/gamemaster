@@ -677,6 +677,30 @@ app.get('/api/analytics/hints', async (req, res) => {
   }
 })
 
+// Get hint history for a specific room
+app.get('/api/rooms/:roomId/hint-history', async (req, res) => {
+  try {
+    const roomId = parseInt(req.params.roomId)
+    const history = await database.getRoomHintHistory(roomId)
+    res.json(history)
+  } catch (error) {
+    console.error('❌ Error fetching hint history:', error)
+    res.status(500).json({ error: 'Failed to fetch hint history' })
+  }
+})
+
+// Clear hint history for a specific room
+app.delete('/api/rooms/:roomId/hint-history', async (req, res) => {
+  try {
+    const roomId = parseInt(req.params.roomId)
+    await database.clearRoomHintHistory(roomId)
+    res.json({ success: true, message: 'Hint history cleared successfully' })
+  } catch (error) {
+    console.error('❌ Error clearing hint history:', error)
+    res.status(500).json({ error: 'Failed to clear hint history' })
+  }
+})
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({

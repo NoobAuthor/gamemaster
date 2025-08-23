@@ -373,6 +373,9 @@ class GameDatabase {
   }
 
   async resetRoom(id) {
+    // Clear hint history when resetting room
+    await this.clearRoomHintHistory(id)
+    
     this.run(
       `UPDATE rooms SET 
        time_remaining = 3600, 
@@ -484,6 +487,30 @@ class GameDatabase {
        GROUP BY room_id, language, DATE(sent_at)
        ORDER BY sent_at DESC`,
       params
+    )
+  }
+
+  // Get hint history for a specific room (current session)
+  async getRoomHintHistory(roomId) {
+    return this.all(
+      `SELECT 
+        id,
+        hint_id,
+        hint_text,
+        language,
+        sent_at
+      FROM hint_usage 
+      WHERE room_id = ? AND hint_id IS NOT NULL
+      ORDER BY sent_at DESC`,
+      [roomId]
+    )
+  }
+
+  // Clear hint history for a specific room
+  async clearRoomHintHistory(roomId) {
+    return this.run(
+      'DELETE FROM hint_usage WHERE room_id = ?',
+      [roomId]
     )
   }
 
