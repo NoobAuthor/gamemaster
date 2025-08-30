@@ -518,7 +518,7 @@ class GameDatabase {
   async getHintsByRoom(roomId) {
     const rows = this.all(
       `SELECT * FROM hints 
-       WHERE (room_id = ? OR room_id IS NULL) AND is_active = 1 
+       WHERE room_id = ? AND is_active = 1 
        ORDER BY category ASC, COALESCE(position, 999999) ASC, created_at ASC`,
       [roomId]
     )
@@ -623,7 +623,7 @@ class GameDatabase {
   async getCategoriesByRoom(roomId) {
     return this.all(
       `SELECT * FROM hint_categories 
-       WHERE (room_id = ? OR room_id IS NULL) AND is_active = 1 
+       WHERE room_id = ? AND is_active = 1 
        ORDER BY COALESCE(position, 999999) ASC, name ASC`,
       [roomId]
     )

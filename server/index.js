@@ -246,7 +246,7 @@ app.put('/api/rooms/:roomId/hints/reorder', async (req, res) => {
     try {
       let position = 0
       for (const id of orderedIds) {
-        await database.run('UPDATE hints SET position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND (room_id = ? OR room_id IS NULL)', [position++, id, roomId])
+        await database.run('UPDATE hints SET position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND room_id = ?', [position++, id, roomId])
       }
       await database.run('COMMIT')
       res.json({ success: true })
@@ -364,7 +364,7 @@ app.put('/api/rooms/:roomId/categories/reorder', async (req, res) => {
     try {
       let position = 0
       for (const categoryId of orderedCategoryIds) {
-        await database.run('UPDATE hint_categories SET position = ? WHERE id = ? AND (room_id = ? OR room_id IS NULL)', [position++, categoryId, roomId])
+        await database.run('UPDATE hint_categories SET position = ? WHERE id = ? AND room_id = ?', [position++, categoryId, roomId])
       }
       await database.run('COMMIT')
       res.json({ success: true })

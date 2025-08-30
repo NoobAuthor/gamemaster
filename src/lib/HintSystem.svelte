@@ -80,6 +80,10 @@
       customHintByRoom = customHintByRoom
     }
     
+    // Clear persistent category and hint order data when switching rooms
+    hintOrderByCategory = {}
+    orderedCategoryNames = []
+    
     loadHintsFromServer()
     loadCategoriesFromServer()
   }
@@ -108,6 +112,8 @@
       categories = list
     } catch (e) {
       console.error('❌ Error cargando categorías:', e)
+      // Clear categories on error to prevent showing wrong data
+      categories = []
     } finally {
       syncCategoryAndHintOrders()
     }
@@ -118,6 +124,14 @@
     const namesFromApi = categories.map((c) => c.name)
     const namesFromHints = Object.keys(hintsByCategory)
     orderedCategoryNames = [...namesFromApi, ...namesFromHints.filter((n) => !namesFromApi.includes(n))]
+
+    // Remove old category orders that no longer exist in current room
+    const allCurrentCategories = new Set(orderedCategoryNames)
+    for (const category of Object.keys(hintOrderByCategory)) {
+      if (!allCurrentCategories.has(category)) {
+        delete hintOrderByCategory[category]
+      }
+    }
 
     // Initialize hint order per category if not present
     for (const [category, hints] of Object.entries(hintsByCategory)) {
@@ -186,9 +200,13 @@
     if (amount && !isNaN(Number(amount))) {
       const hintsToAddNum = Number(amount)
       
-      // Always add as free hints by default for game master convenience
+      // Handle both positive and negative numbers
+      // Positive numbers add hints, negative numbers subtract hints
       room.hintsRemaining += hintsToAddNum
-      room.freeHintsCount = (room.freeHintsCount || 3) + hintsToAddNum
+      room.freeHintsCount = Math.max(0, (room.freeHintsCount || 3) + hintsToAddNum)
+      
+      // Ensure hintsRemaining doesn't go below 0
+      room.hintsRemaining = Math.max(0, room.hintsRemaining)
       
       dispatch('hint-sent', { 
         hintsAdded: hintsToAddNum, 

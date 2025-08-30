@@ -64,8 +64,8 @@
   }
 
   function onMessageSent(event: CustomEvent) {
-    room.lastMessage = event.detail.message
-    dispatch('room-update', room)
+    // Server handles updating last_message and broadcasts room-updated
+    // No need to dispatch room-update here as it can overwrite server state
   }
 </script>
 
