@@ -64,22 +64,11 @@
             const timeSinceSync = (now - syncData.timestamp) / 1000
             const expectedTime = Math.max(0, syncData.time - timeSinceSync)
             
-            // Smooth correction: gradually adjust towards expected time
-            const currentTime = room.timeRemaining
-            const diff = expectedTime - currentTime
-            
-            // If difference is small (±2 seconds), gradually correct
-            if (Math.abs(diff) <= 2) {
-              const correction = Math.sign(diff) * Math.min(Math.abs(diff), 0.1)
-              return { ...room, timeRemaining: Math.max(0, Math.floor(currentTime + correction - 1)) }
-            }
-            // If difference is large, snap to expected time (handles missed events)
-            else if (Math.abs(diff) > 2) {
-              return { ...room, timeRemaining: Math.max(0, Math.floor(expectedTime)) }
-            }
+            // Use expected time directly - this prevents oscillation
+            return { ...room, timeRemaining: Math.max(0, Math.floor(expectedTime)) }
           }
           
-          // Default: just decrement by 1 second
+          // Default: just decrement by 1 second if no sync data
           return { ...room, timeRemaining: Math.max(0, room.timeRemaining - 1) }
         }
         return room

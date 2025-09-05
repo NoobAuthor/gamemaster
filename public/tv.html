@@ -926,25 +926,10 @@
                         const timeSinceSync = (now - lastServerSync.timestamp) / 1000;
                         const expectedTime = Math.max(0, lastServerSync.time - timeSinceSync);
                         
-                        // Smooth correction: gradually adjust towards expected time
-                        const currentTime = currentRoom.timeRemaining;
-                        const diff = expectedTime - currentTime;
-                        
-                        // If difference is small (±2 seconds), gradually correct
-                        if (Math.abs(diff) <= 2) {
-                            const correction = Math.sign(diff) * Math.min(Math.abs(diff), 0.1);
-                            currentRoom.timeRemaining = Math.max(0, Math.floor(currentTime + correction - 1));
-                        }
-                        // If difference is large, snap to expected time (handles missed events)
-                        else if (Math.abs(diff) > 2) {
-                            currentRoom.timeRemaining = Math.max(0, Math.floor(expectedTime));
-                        }
-                        else {
-                            // Default: just decrement by 1 second
-                            currentRoom.timeRemaining = Math.max(0, currentRoom.timeRemaining - 1);
-                        }
+                        // Use expected time directly - this prevents oscillation
+                        currentRoom.timeRemaining = Math.max(0, Math.floor(expectedTime));
                     } else {
-                        // Default: just decrement by 1 second
+                        // Default: just decrement by 1 second if no sync data
                         currentRoom.timeRemaining = Math.max(0, currentRoom.timeRemaining - 1);
                     }
                     
