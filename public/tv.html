@@ -819,6 +819,10 @@
             const socket = io(SERVER_URL);
 
             let currentRoom = null;
+            
+            // Client-side timer smoothing
+            let clientTimerInterval = null;
+            let lastServerSync = { time: null, timestamp: null };
 
             // Configurar información de la sala inicial
             roomTitle.textContent = `Sala ${roomId + 1}`;
@@ -905,6 +909,63 @@
                 }
             }
 
+            // Client-side timer smoothing functions
+            function startClientTimer() {
+                if (clientTimerInterval) return;
+                
+                clientTimerInterval = setInterval(() => {
+                    if (!currentRoom || !currentRoom.isRunning || currentRoom.timeRemaining <= 0) {
+                        stopClientTimer();
+                        return;
+                    }
+                    
+                    const now = Date.now();
+                    
+                    // Check if we have recent server sync data
+                    if (lastServerSync.time !== null && lastServerSync.timestamp) {
+                        const timeSinceSync = (now - lastServerSync.timestamp) / 1000;
+                        const expectedTime = Math.max(0, lastServerSync.time - timeSinceSync);
+                        
+                        // Smooth correction: gradually adjust towards expected time
+                        const currentTime = currentRoom.timeRemaining;
+                        const diff = expectedTime - currentTime;
+                        
+                        // If difference is small (±2 seconds), gradually correct
+                        if (Math.abs(diff) <= 2) {
+                            const correction = Math.sign(diff) * Math.min(Math.abs(diff), 0.1);
+                            currentRoom.timeRemaining = Math.max(0, currentTime + correction - 1);
+                        }
+                        // If difference is large, snap to expected time (handles missed events)
+                        else if (Math.abs(diff) > 2) {
+                            currentRoom.timeRemaining = Math.max(0, expectedTime);
+                        }
+                        else {
+                            // Default: just decrement by 1 second
+                            currentRoom.timeRemaining = Math.max(0, currentRoom.timeRemaining - 1);
+                        }
+                    } else {
+                        // Default: just decrement by 1 second
+                        currentRoom.timeRemaining = Math.max(0, currentRoom.timeRemaining - 1);
+                    }
+                    
+                    updateTimeDisplay(currentRoom.timeRemaining, currentRoom.isRunning);
+                }, 1000);
+            }
+            
+            function stopClientTimer() {
+                if (clientTimerInterval) {
+                    clearInterval(clientTimerInterval);
+                    clientTimerInterval = null;
+                }
+            }
+            
+            function updateServerSync(timeRemaining) {
+                lastServerSync = {
+                    time: timeRemaining,
+                    timestamp: Date.now()
+                };
+            }
+
             function updateRoomData(room) {
                 if (room && room.id === roomId) {
                     currentRoom = room;
@@ -920,6 +981,14 @@
                         room.freeHintsCount || 3,
                     );
                     updateLastMessage(room.lastMessage);
+                    
+                    // Update sync data and manage client timer
+                    updateServerSync(room.timeRemaining);
+                    if (room.isRunning && room.timeRemaining > 0) {
+                        startClientTimer();
+                    } else {
+                        stopClientTimer();
+                    }
                 }
             }
 
@@ -1237,7 +1306,23 @@
 
             socket.on("time-sync", (data) => {
                 if (data.roomId === roomId) {
+                    // Update server sync data first
+                    updateServerSync(data.timeRemaining);
+                    
+                    // Update current room data
+                    if (currentRoom) {
+                        currentRoom.timeRemaining = data.timeRemaining;
+                        currentRoom.isRunning = data.isRunning;
+                    }
+                    
                     updateTimeDisplay(data.timeRemaining, data.isRunning);
+                    
+                    // Manage client timer based on running state
+                    if (data.isRunning && data.timeRemaining > 0) {
+                        startClientTimer();
+                    } else {
+                        stopClientTimer();
+                    }
                 }
             });
 
@@ -1288,6 +1373,11 @@
 
             // Global function for notification close button
             window.hideNotification = hideNotification;
+
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+                stopClientTimer();
+            });
 
             // Inicializar conexión
             socket.connect();

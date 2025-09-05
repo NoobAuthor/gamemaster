@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import RoomTab from './RoomTab.svelte'
   import LanguageSelector from './LanguageSelector.svelte'
   import Settings from './Settings.svelte'
@@ -15,6 +15,10 @@
   let showSettings = false
 
   const SERVER_URL = import.meta.env.PROD ? window.location.origin : 'http://localhost:3001'
+  
+  // Client-side timer smoothing
+  let clientTimerInterval: ReturnType<typeof setInterval> | null = null
+  let lastServerSync: { [roomId: number]: { time: number, timestamp: number } } = {}
 
   // Load initial room data from server
   async function loadInitialRooms() {
@@ -40,6 +44,66 @@
       lastMessage: '',
       players: []
     }))
+  }
+
+  // Client-side timer smoothing functions
+  function startClientTimer() {
+    if (clientTimerInterval) return
+    
+    clientTimerInterval = setInterval(() => {
+      const now = Date.now()
+      let hasRunningRooms = false
+      
+      rooms = rooms.map(room => {
+        if (room.isRunning && room.timeRemaining > 0) {
+          hasRunningRooms = true
+          
+          // Check if we have recent server sync data
+          const syncData = lastServerSync[room.id]
+          if (syncData) {
+            const timeSinceSync = (now - syncData.timestamp) / 1000
+            const expectedTime = Math.max(0, syncData.time - timeSinceSync)
+            
+            // Smooth correction: gradually adjust towards expected time
+            const currentTime = room.timeRemaining
+            const diff = expectedTime - currentTime
+            
+            // If difference is small (±2 seconds), gradually correct
+            if (Math.abs(diff) <= 2) {
+              const correction = Math.sign(diff) * Math.min(Math.abs(diff), 0.1)
+              return { ...room, timeRemaining: Math.max(0, currentTime + correction - 1) }
+            }
+            // If difference is large, snap to expected time (handles missed events)
+            else if (Math.abs(diff) > 2) {
+              return { ...room, timeRemaining: Math.max(0, expectedTime) }
+            }
+          }
+          
+          // Default: just decrement by 1 second
+          return { ...room, timeRemaining: Math.max(0, room.timeRemaining - 1) }
+        }
+        return room
+      })
+      
+      // Stop client timer if no rooms are running
+      if (!hasRunningRooms) {
+        stopClientTimer()
+      }
+    }, 1000)
+  }
+  
+  function stopClientTimer() {
+    if (clientTimerInterval) {
+      clearInterval(clientTimerInterval)
+      clientTimerInterval = null
+    }
+  }
+  
+  function updateServerSync(roomId: number, timeRemaining: number) {
+    lastServerSync[roomId] = {
+      time: timeRemaining,
+      timestamp: Date.now()
+    }
   }
 
   // Inicializar salas
@@ -70,15 +134,39 @@
       rooms = rooms.map(room => 
         room.id === updatedRoom.id ? updatedRoom : room
       )
+      
+      // Update sync data and manage client timer
+      updateServerSync(updatedRoom.id, updatedRoom.timeRemaining)
+      if (updatedRoom.isRunning && updatedRoom.timeRemaining > 0) {
+        startClientTimer()
+      }
     })
 
     socket.on('time-sync', (data: { roomId: number, timeRemaining: number, isRunning: boolean }) => {
+      // Update server sync data first
+      updateServerSync(data.roomId, data.timeRemaining)
+      
       rooms = rooms.map(room => 
         room.id === data.roomId 
           ? { ...room, timeRemaining: data.timeRemaining, isRunning: data.isRunning }
           : room
       )
+      
+      // Manage client timer based on running state
+      if (data.isRunning && data.timeRemaining > 0) {
+        startClientTimer()
+      } else {
+        // Check if any rooms are still running
+        const hasRunningRooms = rooms.some(r => r.isRunning && r.timeRemaining > 0)
+        if (!hasRunningRooms) {
+          stopClientTimer()
+        }
+      }
     })
+  })
+
+  onDestroy(() => {
+    stopClientTimer()
   })
 
   function switchRoom(roomId: number) {

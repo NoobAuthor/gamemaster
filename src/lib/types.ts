@@ -42,6 +42,9 @@ export interface SocketEvents {
   'reset-room': (roomId: number) => void
   'room-reset': (roomId: number) => void
   'chromecast-status-change': (data: { roomId: number, connected: boolean, timestamp: string }) => void
+  'join-game-master-room': (roomId: number) => void
+  'join-tv-room': (roomId: number) => void
+  'cast-status-update': (data: { roomId: number, isCasting: boolean, timestamp?: string, detectionMethod?: string }) => void
   'connect': () => void
   'disconnect': () => void
 }
