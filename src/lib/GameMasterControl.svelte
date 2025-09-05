@@ -71,11 +71,11 @@
             // If difference is small (±2 seconds), gradually correct
             if (Math.abs(diff) <= 2) {
               const correction = Math.sign(diff) * Math.min(Math.abs(diff), 0.1)
-              return { ...room, timeRemaining: Math.max(0, currentTime + correction - 1) }
+              return { ...room, timeRemaining: Math.max(0, Math.floor(currentTime + correction - 1)) }
             }
             // If difference is large, snap to expected time (handles missed events)
             else if (Math.abs(diff) > 2) {
-              return { ...room, timeRemaining: Math.max(0, expectedTime) }
+              return { ...room, timeRemaining: Math.max(0, Math.floor(expectedTime)) }
             }
           }
           
@@ -101,7 +101,7 @@
   
   function updateServerSync(roomId: number, timeRemaining: number) {
     lastServerSync[roomId] = {
-      time: timeRemaining,
+      time: Math.floor(timeRemaining), // Ensure whole seconds
       timestamp: Date.now()
     }
   }
