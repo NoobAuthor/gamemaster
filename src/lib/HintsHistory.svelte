@@ -51,10 +51,13 @@
     loadHintHistory()
   }
 
+  let historyAbort: AbortController | null = null
   async function loadHintHistory() {
     try {
       loadingHistory = true
-      hintHistory = await getRoomHintHistory(room.id)
+      historyAbort?.abort()
+      historyAbort = new AbortController()
+      hintHistory = await getRoomHintHistory(room.id, { signal: historyAbort.signal })
     } catch (error) {
       console.error('❌ Error loading hint history:', error)
       hintHistory = []

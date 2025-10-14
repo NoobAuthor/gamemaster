@@ -38,6 +38,7 @@
   let currentRoomId: number | undefined = undefined
   let categories: Array<{ id?: number; name: string; position?: number }> = []
   let orderedCategoryNames: string[] = []
+  let collapsedByCategory: Record<string, boolean> = {}
   let draggingCategoryIndex: number | null = null
   let draggingHint: { category: string; index: number } | null = null
   let isDragging = false
@@ -95,10 +96,13 @@
     customHintByRoom = customHintByRoom
   }
 
+  let hintsAbort: AbortController | null = null
   async function loadHintsFromServer() {
     try {
       loadingHints = true
-      hintsLibrary = await getRoomHints(room.id)
+      hintsAbort?.abort()
+      hintsAbort = new AbortController()
+      hintsLibrary = await getRoomHints(room.id, { signal: hintsAbort.signal })
     } catch (error) {
       console.error('❌ Error conectando con servidor:', error)
     } finally {
@@ -106,9 +110,12 @@
     }
   }
 
+  let categoriesAbort: AbortController | null = null
   async function loadCategoriesFromServer() {
     try {
-      const list = await getRoomCategories(room.id)
+      categoriesAbort?.abort()
+      categoriesAbort = new AbortController()
+      const list = await getRoomCategories(room.id, { signal: categoriesAbort.signal })
       categories = list
     } catch (e) {
       console.error('❌ Error cargando categorías:', e)
@@ -138,7 +145,14 @@
       if (!hintOrderByCategory[category]) {
         hintOrderByCategory[category] = hints.map((h) => h.id)
       }
+      if (collapsedByCategory[category] === undefined) {
+        collapsedByCategory[category] = false
+      }
     }
+  }
+  function toggleCategory(category: string) {
+    collapsedByCategory[category] = !collapsedByCategory[category]
+    collapsedByCategory = { ...collapsedByCategory }
   }
 
   function sendHint(hintText: string, hintId?: string) {
@@ -383,13 +397,15 @@
       <div class="hints-container">
           {#each orderedCategoryNames as catName, catIndex}
             <div class="category-section"
-                 role="button"
-                 tabindex="0"
                  draggable
                  on:dragstart={(e) => onCategoryDragStart(e, catIndex)}
                  on:dragover|preventDefault
                  on:drop={() => onCategoryDrop(catIndex)}>
-              <h5 role="listitem">{catName}</h5>
+              <h5 role="button" tabindex="0" on:click={() => toggleCategory(catName)}
+                  on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleCategory(catName)}>
+                {collapsedByCategory[catName] ? '▶' : '▼'} {catName}
+              </h5>
+              {#if !collapsedByCategory[catName]}
               <div class="hints-grid">
                 {#each orderedHints(catName, hintsByCategory[catName] || []) as hint, hintIndex}
                   <button
@@ -407,6 +423,7 @@
                   </button>
                 {/each}
               </div>
+              {/if}
             </div>
           {/each}
         </div>

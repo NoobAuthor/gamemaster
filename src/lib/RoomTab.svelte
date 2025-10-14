@@ -7,6 +7,8 @@
   import Modal from './Modal.svelte'
   import { socket } from './socket'
   import type { Room, Language } from './types'
+  import Button from './ui/Button.svelte'
+  import Icon from './ui/Icon.svelte'
 
   export let room: Room
   export let currentLanguage: Language
@@ -72,10 +74,9 @@
 <div class="room-container">
   <div class="room-header">
     <h2>{room.name}</h2>
-    <button class="reset-btn" on:click={resetRoom}>
-      <span class="btn-icon reset-icon"></span>
-      Reiniciar Sala
-    </button>
+    <Button variant="danger" size="md" on:click={resetRoom} title="Reiniciar sala">
+      <Icon name="reset" /> Reiniciar Sala
+    </Button>
   </div>
 
   <div class="room-grid">

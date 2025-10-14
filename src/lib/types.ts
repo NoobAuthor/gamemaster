@@ -22,6 +22,15 @@ export interface Hint {
   roomId?: number
 }
 
+export interface LanguageInfo {
+  code: string
+  name: string
+  flag: string
+  is_default?: number
+}
+
+export type GroupedRoomMessages = Record<string, Array<{ id: number; message: string }>>
+
 export interface GameState {
   rooms: Room[]
   currentLanguage: Language

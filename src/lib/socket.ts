@@ -1,13 +1,12 @@
 import { io, type Socket } from 'socket.io-client'
 import type { SocketEvents } from './types'
+import { getWebSocketBase, isDev } from './env'
 
 // Configurar la URL del servidor
 // En desarrollo, usar el hostname actual para funcionar desde otros dispositivos de la misma red
-const SERVER_URL = import.meta.env.PROD
-  ? window.location.origin
-  : `http://${window.location.hostname}:3001`
+const SERVER_URL = getWebSocketBase()
 
-console.log('🔗 Conectando a servidor Socket.IO:', SERVER_URL)
+if (isDev) console.log('🔗 Conectando a servidor Socket.IO:', SERVER_URL)
 
 export const socket: Socket<SocketEvents> = io(SERVER_URL, {
   autoConnect: false,
@@ -20,11 +19,11 @@ export const socket: Socket<SocketEvents> = io(SERVER_URL, {
 
 // Agregar logs para debugging
 socket.on('connect', () => {
-  console.log('✅ Conectado al servidor Socket.IO')
+  if (isDev) console.log('✅ Conectado al servidor Socket.IO')
 })
 
 socket.on('disconnect', (reason) => {
-  console.log('❌ Desconectado del servidor:', reason)
+  if (isDev) console.log('❌ Desconectado del servidor:', reason)
 })
 
 socket.on('connect_error', (error) => {

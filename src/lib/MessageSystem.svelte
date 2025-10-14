@@ -2,6 +2,7 @@
   import { createEventDispatcher, onMount } from 'svelte'
   import { socket } from './socket'
   import { getRoomMessagesGrouped, getLanguages, createRoomMessage } from './api'
+  import { toast } from './toast'
   import type { Room, Language } from './types'
 
   export let room: Room
@@ -55,13 +56,17 @@
     customMessageByRoom = customMessageByRoom
   }
 
+  let messagesAbort: AbortController | null = null
   async function loadMessagesFromServer() {
     try {
       loadingMessages = true
-      
-      // Load messages grouped by language in one request
-      const grouped = await getRoomMessagesGrouped(room.id)
-      const langs = await getLanguages()
+      // Cancel inflight and parallelize API requests
+      messagesAbort?.abort()
+      messagesAbort = new AbortController()
+      const [grouped, langs] = await Promise.all([
+        getRoomMessagesGrouped(room.id, { signal: messagesAbort.signal }),
+        getLanguages({ signal: messagesAbort.signal })
+      ])
       // Clear removed languages
       for (const key of Object.keys(roomMessages)) {
         if (!langs.find((l: any) => l.code === key)) delete roomMessages[key]
@@ -75,6 +80,7 @@
       // Don't auto-initialize default messages - let admin create them manually if needed
     } catch (error) {
       console.error('❌ Error cargando mensajes:', error)
+      toast.error('No se pudieron cargar los mensajes')
       // Initialize empty messages instead of hardcoded defaults
       roomMessages = {}
     } finally {
@@ -86,7 +92,7 @@
 
   function sendMessage(message: string) {
     if (!message.trim()) {
-      alert('Escribe un mensaje válido')
+      toast.info('Escribe un mensaje válido')
       return
     }
 
@@ -108,7 +114,7 @@
 
   function sendPredefinedMessage(message: string) {
     if (!message.trim()) {
-      alert('Escribe un mensaje válido')
+      toast.info('Escribe un mensaje válido')
       return
     }
 
