@@ -70,8 +70,7 @@
             "x64"
           ]
         }
-      ],
-      "publisherName": "Game Master"
+      ]
     },
     "linux": {
       "icon": "electron/icons/icon.svg",
