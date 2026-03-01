@@ -9,8 +9,8 @@
     const isTvView = urlParams.get('tv') === 'true'
     
     if (isTvView) {
-      // Redirigir a componente de TV
-      window.location.href = '/tv.html'
+      // Redirigir a componente de TV (relative path for static/Electron)
+      window.location.assign('tv.html')
     }
   })
 </script>

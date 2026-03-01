@@ -3,6 +3,7 @@
   import { getLanguages, getRoomMessagesGrouped, createRoomMessage, deleteRoomMessage } from '../api'
   import { toast } from '../toast'
   import Modal from '../Modal.svelte'
+  import { config } from '../config'
 
   export let roomId: number
 
@@ -11,7 +12,7 @@
   let viewingLanguage: Language = 'es'
   let editingMessageIndex = -1
   let editingMessageLanguage: Language = 'es'
-  let newMessage = ''
+  let textByLang: Record<string, string> = {}
   let isLoading = false
   let showCreateForm = false
 
@@ -30,29 +31,39 @@
   }
 
   function startCreatingMessage() {
-    newMessage = ''
     editingMessageIndex = -1
     editingMessageLanguage = viewingLanguage
+    const next: Record<string, string> = {}
+    for (const { code } of systemLanguages) next[code] = ''
+    textByLang = next
     showCreateForm = true
   }
 
   function startEditingMessage(index: number, language: Language) {
     editingMessageIndex = index
     editingMessageLanguage = language
-    newMessage = roomMessages[language][index].message
+    const next: Record<string, string> = {}
+    for (const { code } of systemLanguages) next[code] = ''
+    next[language] = roomMessages[language][index].message
+    textByLang = next
     showCreateForm = true
   }
 
   function cancelMessageEdit() {
     editingMessageIndex = -1
-    newMessage = ''
+    textByLang = {}
     showCreateForm = false
   }
 
   async function addMessage() {
-    if (!newMessage.trim()) {
+    const spanish = (textByLang['es'] || '').trim()
+    const mandatoryOk = $config.obligatoryLanguages.every(code => (textByLang[code] || '').trim().length > 0 || spanish.length > 0)
+    if (!mandatoryOk) {
+      toast.error('Texto obligatorio requerido en idiomas obligatorios')
       return
     }
+    const hasAny = systemLanguages.some(l => (textByLang[l.code] || '').trim().length > 0)
+    if (!hasAny) return
     
     try {
       isLoading = true
@@ -62,7 +73,12 @@
         await deleteRoomMessage(roomId, toEdit.id)
       }
       
-      await createRoomMessage(roomId, editingMessageLanguage, newMessage.trim())
+      for (const { code } of systemLanguages) {
+        const value = (textByLang[code] || '').trim()
+        if (value) {
+          await createRoomMessage(roomId, code, value)
+        }
+      }
       
       await load()
       cancelMessageEdit()
@@ -121,18 +137,12 @@
   {#if showCreateForm}
     <div class="message-form">
       <h4>{editingMessageIndex >= 0 ? 'Editar Mensaje' : 'Crear Nuevo Mensaje'}</h4>
-      <div class="form-group">
-        <label for="message-language">Idioma del mensaje:</label>
-        <select id="message-language" bind:value={editingMessageLanguage} disabled={editingMessageIndex >= 0}>
-          {#each systemLanguages as lang}
-            <option value={lang.code}>{lang.flag} {lang.name}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="message-text">Texto del mensaje:</label>
-        <textarea id="message-text" bind:value={newMessage} placeholder="Escribe el mensaje rápido aquí..." rows="3"></textarea>
-      </div>
+      {#each systemLanguages as lang}
+        <div class="form-group">
+          <label for="msg-text-{lang.code}">{lang.flag} Texto en {lang.name} {$config.obligatoryLanguages.includes(lang.code) ? '(obligatorio)' : '(opcional)'}:</label>
+          <textarea id="msg-text-{lang.code}" bind:value={textByLang[lang.code]} placeholder="Texto del mensaje en {lang.name}" rows="3"></textarea>
+        </div>
+      {/each}
       <div class="form-actions">
         <button class="save-btn" on:click={addMessage} disabled={isLoading}>
           <span class="btn-icon save-icon"></span>

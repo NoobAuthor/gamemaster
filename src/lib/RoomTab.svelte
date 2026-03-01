@@ -2,10 +2,13 @@
   import { createEventDispatcher } from 'svelte'
   import TimerControl from './TimerControl.svelte'
   import HintSystem from './HintSystem.svelte'
+  import HintsHistory from './HintsHistory.svelte'
   import MessageSystem from './MessageSystem.svelte'
   import Modal from './Modal.svelte'
   import { socket } from './socket'
   import type { Room, Language } from './types'
+  import Button from './ui/Button.svelte'
+  import Icon from './ui/Icon.svelte'
 
   export let room: Room
   export let currentLanguage: Language
@@ -14,6 +17,9 @@
   
   // Modal states
   let showResetModal = false
+  
+  // Reference to hints history component
+  let hintsHistoryComponent: any
 
   // Timer logic moved to server-side for proper synchronization
 
@@ -30,6 +36,14 @@
     
     socket.emit('reset-room', room.id)
     dispatch('room-update', room)
+
+    // Immediately clear local hints history UI and refresh after server reset
+    if (hintsHistoryComponent) {
+      hintsHistoryComponent.clearLocalHistory()
+      setTimeout(() => {
+        hintsHistoryComponent.refreshHistory()
+      }, 600)
+    }
   }
 
   function onTimerUpdate(event: CustomEvent) {
@@ -41,21 +55,28 @@
     // The server handles hint count decrement and broadcasts room updates
     // No need to manually decrement here as it causes double-decrement
     dispatch('room-update', room)
+    
+    // Refresh hints history after a hint is sent
+    if (hintsHistoryComponent) {
+      // Add a small delay to ensure the server has processed the hint
+      setTimeout(() => {
+        hintsHistoryComponent.refreshHistory()
+      }, 500)
+    }
   }
 
   function onMessageSent(event: CustomEvent) {
-    room.lastMessage = event.detail.message
-    dispatch('room-update', room)
+    // Server handles updating last_message and broadcasts room-updated
+    // No need to dispatch room-update here as it can overwrite server state
   }
 </script>
 
 <div class="room-container">
   <div class="room-header">
     <h2>{room.name}</h2>
-    <button class="reset-btn" on:click={resetRoom}>
-      <span class="btn-icon reset-icon"></span>
-      Reiniciar Sala
-    </button>
+    <Button variant="danger" size="md" on:click={resetRoom} title="Reiniciar sala">
+      <Icon name="reset" /> Reiniciar Sala
+    </Button>
   </div>
 
   <div class="room-grid">
@@ -70,6 +91,11 @@
         bind:room 
         {currentLanguage} 
         on:hint-sent={onHintSent}
+      />
+      <HintsHistory 
+        bind:this={hintsHistoryComponent}
+        bind:room 
+        {currentLanguage}
       />
     </div>
 
@@ -101,6 +127,7 @@
     <li>Pistas disponibles (3)</li>
     <li>Estado del temporizador (pausado)</li>
     <li>Mensajes y jugadores</li>
+    <li>Historial de pistas utilizadas</li>
   </ul>
 </Modal>
 

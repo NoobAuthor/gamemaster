@@ -8,6 +8,7 @@
     deleteLanguage as apiDeleteLanguage,
     getRoomHints,
     createRoomHint,
+    updateHint,
     deleteHint as apiDeleteHint,
     getRoomMessagesGrouped,
     createRoomMessage,
@@ -516,10 +517,16 @@
 
     try {
       isLoading = true
-      await createRoomHint(selectedRoomId, { text: buildTextObject(), category: hintForm.category.trim() })
-        await loadHints()
-        cancelHintEdit()
-        dispatch('hints-updated')
+      if (editingHintId) {
+        // Update existing hint
+        await updateHint(editingHintId, { text: buildTextObject(), category: hintForm.category.trim() })
+      } else {
+        // Create new hint
+        await createRoomHint(selectedRoomId, { text: buildTextObject(), category: hintForm.category.trim() })
+      }
+      await loadHints()
+      cancelHintEdit()
+      dispatch('hints-updated')
       toast.success(editingHintId ? 'Pista actualizada' : 'Pista creada')
     } catch (error) {
       console.error('Error saving hint:', error)

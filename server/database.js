@@ -373,6 +373,9 @@ class GameDatabase {
   }
 
   async resetRoom(id) {
+    // Clear hint history when resetting room
+    await this.clearRoomHintHistory(id)
+    
     this.run(
       `UPDATE rooms SET 
        time_remaining = 3600, 
@@ -487,11 +490,35 @@ class GameDatabase {
     )
   }
 
+  // Get hint history for a specific room (current session)
+  async getRoomHintHistory(roomId) {
+    return this.all(
+      `SELECT 
+        id,
+        hint_id,
+        hint_text,
+        language,
+        sent_at
+      FROM hint_usage 
+      WHERE room_id = ? AND hint_id IS NOT NULL
+      ORDER BY sent_at DESC`,
+      [roomId]
+    )
+  }
+
+  // Clear hint history for a specific room
+  async clearRoomHintHistory(roomId) {
+    return this.run(
+      'DELETE FROM hint_usage WHERE room_id = ?',
+      [roomId]
+    )
+  }
+
   // Room-specific hints methods
   async getHintsByRoom(roomId) {
     const rows = this.all(
       `SELECT * FROM hints 
-       WHERE (room_id = ? OR room_id IS NULL) AND is_active = 1 
+       WHERE room_id = ? AND is_active = 1 
        ORDER BY category ASC, COALESCE(position, 999999) ASC, created_at ASC`,
       [roomId]
     )
@@ -596,7 +623,7 @@ class GameDatabase {
   async getCategoriesByRoom(roomId) {
     return this.all(
       `SELECT * FROM hint_categories 
-       WHERE (room_id = ? OR room_id IS NULL) AND is_active = 1 
+       WHERE room_id = ? AND is_active = 1 
        ORDER BY COALESCE(position, 999999) ASC, name ASC`,
       [roomId]
     )

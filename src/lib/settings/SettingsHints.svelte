@@ -2,7 +2,7 @@
   import { onMount, createEventDispatcher } from 'svelte'
   import { config } from '../config'
   import { toast } from '../toast'
-  import { getLanguages, getRoomHints, createRoomHint, deleteHint as apiDeleteHint, getRoomCategories } from '../api'
+  import { getLanguages, getRoomHints, createRoomHint, updateHint, deleteHint as apiDeleteHint, getRoomCategories } from '../api'
   import type { Hint, Language } from '../types'
   import Modal from '../Modal.svelte'
 
@@ -98,7 +98,13 @@
     }
     try {
       isLoading = true
-      await createRoomHint(roomId, { text: buildTextObject(), category: selectedCategory.trim() })
+      if (editingHintId) {
+        // Update existing hint
+        await updateHint(editingHintId, { text: buildTextObject(), category: selectedCategory.trim() })
+      } else {
+        // Create new hint
+        await createRoomHint(roomId, { text: buildTextObject(), category: selectedCategory.trim() })
+      }
       toast.success(editingHintId ? 'Pista actualizada' : 'Pista creada')
       await reloadHints()
       cancelHintEdit()

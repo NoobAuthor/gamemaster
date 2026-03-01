@@ -38,6 +38,7 @@
   let currentRoomId: number | undefined = undefined
   let categories: Array<{ id?: number; name: string; position?: number }> = []
   let orderedCategoryNames: string[] = []
+  let collapsedByCategory: Record<string, boolean> = {}
   let draggingCategoryIndex: number | null = null
   let draggingHint: { category: string; index: number } | null = null
   let isDragging = false
@@ -50,11 +51,11 @@
     currentRoomId = room.id
     
     // Listen for server acknowledgment of hints
-    socket.on('hint-processed', (data) => {
+    socket.on('hint-processed', (data: { roomId: number, hintId: string, success: boolean, timestamp: string }) => {
       toast.info(`✅ Servidor confirmó recepción de pista`)
     })
     
-    socket.on('hint-error', (error) => {
+    socket.on('hint-error', (error: { message: string }) => {
       toast.error(`❌ Error del servidor: ${error.message}`)
     })
     
@@ -80,6 +81,10 @@
       customHintByRoom = customHintByRoom
     }
     
+    // Clear persistent category and hint order data when switching rooms
+    hintOrderByCategory = {}
+    orderedCategoryNames = []
+    
     loadHintsFromServer()
     loadCategoriesFromServer()
   }
@@ -91,10 +96,13 @@
     customHintByRoom = customHintByRoom
   }
 
+  let hintsAbort: AbortController | null = null
   async function loadHintsFromServer() {
     try {
       loadingHints = true
-      hintsLibrary = await getRoomHints(room.id)
+      hintsAbort?.abort()
+      hintsAbort = new AbortController()
+      hintsLibrary = await getRoomHints(room.id, { signal: hintsAbort.signal })
     } catch (error) {
       console.error('❌ Error conectando con servidor:', error)
     } finally {
@@ -102,12 +110,17 @@
     }
   }
 
+  let categoriesAbort: AbortController | null = null
   async function loadCategoriesFromServer() {
     try {
-      const list = await getRoomCategories(room.id)
+      categoriesAbort?.abort()
+      categoriesAbort = new AbortController()
+      const list = await getRoomCategories(room.id, { signal: categoriesAbort.signal })
       categories = list
     } catch (e) {
       console.error('❌ Error cargando categorías:', e)
+      // Clear categories on error to prevent showing wrong data
+      categories = []
     } finally {
       syncCategoryAndHintOrders()
     }
@@ -119,12 +132,27 @@
     const namesFromHints = Object.keys(hintsByCategory)
     orderedCategoryNames = [...namesFromApi, ...namesFromHints.filter((n) => !namesFromApi.includes(n))]
 
+    // Remove old category orders that no longer exist in current room
+    const allCurrentCategories = new Set(orderedCategoryNames)
+    for (const category of Object.keys(hintOrderByCategory)) {
+      if (!allCurrentCategories.has(category)) {
+        delete hintOrderByCategory[category]
+      }
+    }
+
     // Initialize hint order per category if not present
     for (const [category, hints] of Object.entries(hintsByCategory)) {
       if (!hintOrderByCategory[category]) {
         hintOrderByCategory[category] = hints.map((h) => h.id)
       }
+      if (collapsedByCategory[category] === undefined) {
+        collapsedByCategory[category] = false
+      }
     }
+  }
+  function toggleCategory(category: string) {
+    collapsedByCategory[category] = !collapsedByCategory[category]
+    collapsedByCategory = { ...collapsedByCategory }
   }
 
   function sendHint(hintText: string, hintId?: string) {
@@ -186,9 +214,13 @@
     if (amount && !isNaN(Number(amount))) {
       const hintsToAddNum = Number(amount)
       
-      // Always add as free hints by default for game master convenience
+      // Handle both positive and negative numbers
+      // Positive numbers add hints, negative numbers subtract hints
       room.hintsRemaining += hintsToAddNum
-      room.freeHintsCount = (room.freeHintsCount || 3) + hintsToAddNum
+      room.freeHintsCount = Math.max(0, (room.freeHintsCount || 3) + hintsToAddNum)
+      
+      // Ensure hintsRemaining doesn't go below 0
+      room.hintsRemaining = Math.max(0, room.hintsRemaining)
       
       dispatch('hint-sent', { 
         hintsAdded: hintsToAddNum, 
@@ -369,7 +401,11 @@
                  on:dragstart={(e) => onCategoryDragStart(e, catIndex)}
                  on:dragover|preventDefault
                  on:drop={() => onCategoryDrop(catIndex)}>
-              <h5 role="listitem">{catName}</h5>
+              <h5 role="button" tabindex="0" on:click={() => toggleCategory(catName)}
+                  on:keydown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleCategory(catName)}>
+                {collapsedByCategory[catName] ? '▶' : '▼'} {catName}
+              </h5>
+              {#if !collapsedByCategory[catName]}
               <div class="hints-grid">
                 {#each orderedHints(catName, hintsByCategory[catName] || []) as hint, hintIndex}
                   <button
@@ -387,6 +423,7 @@
                   </button>
                 {/each}
               </div>
+              {/if}
             </div>
           {/each}
         </div>
@@ -414,7 +451,7 @@
         on:click={sendCustomHint}
       >
         <span class="btn-icon send-icon"></span>
-        Enviar Pista Personalizada
+        Enviar
       </button>
     </div>
   {/if}
@@ -556,7 +593,7 @@
     background: var(--glass-bg);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: var(--text-secondary);
-    padding: var(--space-md);
+    padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-md);
     cursor: pointer;
     font-weight: 600;
@@ -566,6 +603,8 @@
     align-items: center;
     justify-content: center;
     gap: var(--space-sm);
+    line-height: 1;
+    min-width: 0;
     text-transform: uppercase;
     letter-spacing: 0.025em;
     backdrop-filter: blur(10px);
@@ -579,6 +618,7 @@
     color: var(--text-primary);
     border-color: var(--accent-blue);
     box-shadow: var(--shadow-md);
+    white-space: nowrap;
   }
 
   .type-btn:hover {
@@ -661,23 +701,17 @@
     position: relative;
   }
 
+  /* Remove warning badge and disable animation for penalty-warning hints */
   .hint-card.penalty-warning::before {
-    content: '⚠️ -2 min';
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #ff6b3d;
-    color: white;
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: bold;
+    display: none !important;
   }
 
   .hint-card.penalty-warning:hover {
     background: rgba(255, 107, 61, 0.15);
     border-color: #ff6b3d;
   }
+
+
 
   .hint-preview {
     font-size: 0.9rem;

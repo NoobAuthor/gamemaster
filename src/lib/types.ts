@@ -22,6 +22,15 @@ export interface Hint {
   roomId?: number
 }
 
+export interface LanguageInfo {
+  code: string
+  name: string
+  flag: string
+  is_default?: number
+}
+
+export type GroupedRoomMessages = Record<string, Array<{ id: number; message: string }>>
+
 export interface GameState {
   rooms: Room[]
   currentLanguage: Language
@@ -36,9 +45,15 @@ export interface SocketEvents {
   'room-updated': (room: Room) => void
   'time-sync': (data: { roomId: number, timeRemaining: number, isRunning: boolean }) => void
   'hint-sent': (data: { roomId: number, hint: string, language: Language, isQuickMessage?: boolean }) => void
+  'hint-processed': (data: { roomId: number, hintId: string, success: boolean, timestamp: string }) => void
+  'hint-error': (error: { message: string }) => void
   'message-sent': (data: { roomId: number, message: string, language: Language, isQuickMessage?: boolean }) => void
   'reset-room': (roomId: number) => void
+  'room-reset': (roomId: number) => void
   'chromecast-status-change': (data: { roomId: number, connected: boolean, timestamp: string }) => void
+  'join-game-master-room': (roomId: number) => void
+  'join-tv-room': (roomId: number) => void
+  'cast-status-update': (data: { roomId: number, isCasting: boolean, timestamp?: string, detectionMethod?: string }) => void
   'connect': () => void
   'disconnect': () => void
 }

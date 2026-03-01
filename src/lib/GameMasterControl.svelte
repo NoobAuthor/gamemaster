@@ -1,26 +1,35 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import RoomTab from './RoomTab.svelte'
   import LanguageSelector from './LanguageSelector.svelte'
   import Settings from './Settings.svelte'
+  import Button from './ui/Button.svelte'
+  import Icon from './ui/Icon.svelte'
   import { socket } from './socket'
   import { loadConfig } from './config'
   import { getRooms } from './api'
   import type { Room, Language } from './types'
+  import { roomsStore, setRooms, updateRoomInStore } from './stores/rooms'
 
   let activeRoom = 0
   let rooms: Room[] = []
+  let unsubscribeRooms: (() => void) | null = null
   let currentLanguage: Language = 'es'
   let connected = false
   let showSettings = false
 
-  const SERVER_URL = import.meta.env.PROD ? window.location.origin : 'http://localhost:3001'
+  // Base URL handling centralized elsewhere
+  
+  // Client-side timer smoothing
+  let clientTimerInterval: ReturnType<typeof setInterval> | null = null
+  let lastServerSync: { [roomId: number]: { time: number, timestamp: number } } = {}
 
   // Load initial room data from server
   async function loadInitialRooms() {
     try {
-      rooms = await getRooms()
-      console.log('✅ Loaded room data from server:', rooms)
+      const loaded = await getRooms()
+      setRooms(loaded)
+      console.log('✅ Loaded room data from server:', loaded)
     } catch (error) {
       console.error('❌ Error loading rooms:', error)
       // Fallback to empty rooms if server fails
@@ -30,7 +39,7 @@
 
   // Fallback: create empty rooms only if server is unavailable
   function createEmptyRooms() {
-    rooms = Array.from({ length: 5 }, (_, i) => ({
+    const empty = Array.from({ length: 5 }, (_, i) => ({
       id: i,
       name: `Sala ${i + 1}`,
       timeRemaining: 60 * 60,
@@ -40,10 +49,64 @@
       lastMessage: '',
       players: []
     }))
+    setRooms(empty)
+  }
+
+  // Client-side timer smoothing functions
+  function startClientTimer() {
+    if (clientTimerInterval) return
+    
+    clientTimerInterval = setInterval(() => {
+      const now = Date.now()
+      let hasRunningRooms = false
+      let changed = false
+      const nextRooms = rooms.map(room => {
+        if (room.isRunning && room.timeRemaining > 0) {
+          hasRunningRooms = true
+          const syncData = lastServerSync[room.id]
+          if (syncData) {
+            const timeSinceSync = (now - syncData.timestamp) / 1000
+            const expectedTime = Math.max(0, Math.floor(syncData.time - timeSinceSync))
+            if (expectedTime !== room.timeRemaining) {
+              changed = true
+              return { ...room, timeRemaining: expectedTime }
+            }
+            return room
+          }
+          const decremented = Math.max(0, room.timeRemaining - 1)
+          if (decremented !== room.timeRemaining) {
+            changed = true
+            return { ...room, timeRemaining: decremented }
+          }
+        }
+        return room
+      })
+      if (changed) setRooms(nextRooms)
+
+      // Stop client timer if no rooms are running
+      if (!hasRunningRooms) {
+        stopClientTimer()
+      }
+    }, 1000)
+  }
+  
+  function stopClientTimer() {
+    if (clientTimerInterval) {
+      clearInterval(clientTimerInterval)
+      clientTimerInterval = null
+    }
+  }
+  
+  function updateServerSync(roomId: number, timeRemaining: number) {
+    lastServerSync[roomId] = {
+      time: Math.floor(timeRemaining), // Ensure whole seconds
+      timestamp: Date.now()
+    }
   }
 
   // Inicializar salas
   onMount(async () => {
+    unsubscribeRooms = roomsStore.subscribe((v) => { rooms = v })
     // Load server config (obligatory languages, penalties, etc.)
     await loadConfig()
     // Load actual room data from server instead of creating empty rooms
@@ -52,33 +115,60 @@
     // Conectar a Socket.IO
     socket.connect()
     
-    socket.on('connect', () => {
+    const onConnect = () => {
       connected = true
       console.log('Conectado al servidor')
-      
       // Join the initial room (room 0) by default
       socket.emit('join-game-master-room', activeRoom)
       console.log(`🎮 Game master connected and joined room ${activeRoom}`)
-    })
+    }
 
-    socket.on('disconnect', () => {
+    const onDisconnect = () => {
       connected = false
       console.log('Desconectado del servidor')
-    })
+    }
 
-    socket.on('room-updated', (updatedRoom: Room) => {
-      rooms = rooms.map(room => 
-        room.id === updatedRoom.id ? updatedRoom : room
-      )
-    })
+    const onRoomUpdated = (updatedRoom: Room) => {
+      updateRoomInStore(updatedRoom)
+      // Update sync data and manage client timer
+      updateServerSync(updatedRoom.id, updatedRoom.timeRemaining)
+      if (updatedRoom.isRunning && updatedRoom.timeRemaining > 0) {
+        startClientTimer()
+      }
+    }
 
-    socket.on('time-sync', (data: { roomId: number, timeRemaining: number, isRunning: boolean }) => {
-      rooms = rooms.map(room => 
-        room.id === data.roomId 
-          ? { ...room, timeRemaining: data.timeRemaining, isRunning: data.isRunning }
-          : room
-      )
-    })
+    const onTimeSync = (data: { roomId: number, timeRemaining: number, isRunning: boolean }) => {
+      // Update server sync data first
+      updateServerSync(data.roomId, data.timeRemaining)
+      const current = rooms.find(r => r.id === data.roomId)
+      if (current) {
+        updateRoomInStore({ ...current, timeRemaining: data.timeRemaining, isRunning: data.isRunning })
+      }
+      // Manage client timer based on running state
+      if (data.isRunning && data.timeRemaining > 0) {
+        startClientTimer()
+      } else {
+        // Check if any rooms are still running
+        const hasRunningRooms = rooms.some(r => r.isRunning && r.timeRemaining > 0)
+        if (!hasRunningRooms) {
+          stopClientTimer()
+        }
+      }
+    }
+
+    socket.on('connect', onConnect)
+    socket.on('disconnect', onDisconnect)
+    socket.on('room-updated', onRoomUpdated)
+    socket.on('time-sync', onTimeSync)
+  })
+
+  onDestroy(() => {
+    socket.off('connect')
+    socket.off('disconnect')
+    socket.off('room-updated')
+    socket.off('time-sync')
+    stopClientTimer()
+    if (unsubscribeRooms) unsubscribeRooms()
   })
 
   function switchRoom(roomId: number) {
@@ -90,7 +180,7 @@
   }
 
   function updateRoom(room: Room) {
-    rooms = rooms.map(r => r.id === room.id ? room : r)
+    updateRoomInStore(room)
     socket.emit('update-room', room)
   }
 
@@ -133,15 +223,13 @@
   <header class="header">
     <h1>🎮 Game Master - Control de Salas de Escape</h1>
     <div class="header-controls">
-      <button class="settings-btn" on:click={openSettings}>
-        <span class="btn-icon settings-icon"></span>
-        Configuración
-      </button>
+      <Button variant="glass" size="md" on:click={openSettings} title="Abrir configuración">
+        <Icon name="settings" /> Configuración
+      </Button>
       <LanguageSelector bind:currentLanguage />
-      <button class="tv-btn" on:click={openTvView}>
-        <span class="btn-icon tv-icon"></span>
-        Vista TV
-      </button>
+      <Button variant="glass" size="md" on:click={openTvView} title="Abrir vista TV">
+        <Icon name="tv" /> Vista TV
+      </Button>
       <div class="connection-status" class:connected>
         <span class="status-light" class:connected></span>
         {connected ? 'Conectado' : 'Desconectado'}

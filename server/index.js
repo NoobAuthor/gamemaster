@@ -4,6 +4,8 @@ import { Server } from 'socket.io'
 import cors from 'cors'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
+import os from 'os'
 import database from './database.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -20,6 +22,60 @@ const io = new Server(server, {
 })
 
 const PORT = process.env.PORT || 3001
+
+// Process lock to prevent multiple server instances
+const LOCK_FILE = path.join(os.tmpdir(), `gamemaster-server-${PORT}.lock`)
+
+function createProcessLock() {
+  try {
+    // Check if lock file exists and if the process is still running
+    if (fs.existsSync(LOCK_FILE)) {
+      const pidStr = fs.readFileSync(LOCK_FILE, 'utf8').trim()
+      const pid = parseInt(pidStr)
+      
+      if (pid && !isNaN(pid)) {
+        try {
+          // Check if process is still running (throws if not)
+          process.kill(pid, 0)
+          console.error(`❌ Another Game Master server instance is already running (PID: ${pid})`)
+          console.error(`❌ Lock file: ${LOCK_FILE}`)
+          console.error('❌ Please stop the other instance or wait for it to finish.')
+          process.exit(1)
+        } catch (e) {
+          // Process is not running, remove stale lock file
+          console.log(`🧹 Removing stale lock file for PID ${pid}`)
+          fs.unlinkSync(LOCK_FILE)
+        }
+      }
+    }
+    
+    // Create new lock file with current PID
+    fs.writeFileSync(LOCK_FILE, process.pid.toString())
+    console.log(`🔒 Created process lock: ${LOCK_FILE} (PID: ${process.pid})`)
+    
+    return true
+  } catch (error) {
+    console.error('❌ Failed to create process lock:', error)
+    return false
+  }
+}
+
+function removeProcessLock() {
+  try {
+    if (fs.existsSync(LOCK_FILE)) {
+      fs.unlinkSync(LOCK_FILE)
+      console.log('🔓 Removed process lock')
+    }
+  } catch (error) {
+    console.error('❌ Failed to remove process lock:', error)
+  }
+}
+
+// Create process lock before starting server
+if (!createProcessLock()) {
+  console.error('❌ Failed to acquire process lock, exiting')
+  process.exit(1)
+}
 
 // Middleware
 app.use(cors())
@@ -54,8 +110,11 @@ function formatRoomForFrontend(dbRoom) {
   }
 }
 
-// Timer for updating room timers
-setInterval(async () => {
+// Timer interval reference for cleanup
+let timerInterval = null
+
+// Timer function for updating room timers
+async function updateRoomTimers() {
   try {
     const rooms = await database.getAllRooms()
     let hasChanges = false
@@ -90,7 +149,27 @@ setInterval(async () => {
   } catch (error) {
     console.error('❌ Timer update error:', error)
   }
-}, 1000)
+}
+
+// Start the timer interval (called only after server is listening)
+function startTimerInterval() {
+  if (timerInterval) {
+    console.log('⚠️ Timer interval already running, skipping start')
+    return
+  }
+  
+  console.log('⏰ Starting room timer interval')
+  timerInterval = setInterval(updateRoomTimers, 1000)
+}
+
+// Stop the timer interval
+function stopTimerInterval() {
+  if (timerInterval) {
+    console.log('⏰ Stopping room timer interval')
+    clearInterval(timerInterval)
+    timerInterval = null
+  }
+}
 
 // API Routes
 
@@ -246,7 +325,7 @@ app.put('/api/rooms/:roomId/hints/reorder', async (req, res) => {
     try {
       let position = 0
       for (const id of orderedIds) {
-        await database.run('UPDATE hints SET position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND (room_id = ? OR room_id IS NULL)', [position++, id, roomId])
+        await database.run('UPDATE hints SET position = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND room_id = ?', [position++, id, roomId])
       }
       await database.run('COMMIT')
       res.json({ success: true })
@@ -364,7 +443,7 @@ app.put('/api/rooms/:roomId/categories/reorder', async (req, res) => {
     try {
       let position = 0
       for (const categoryId of orderedCategoryIds) {
-        await database.run('UPDATE hint_categories SET position = ? WHERE id = ? AND (room_id = ? OR room_id IS NULL)', [position++, categoryId, roomId])
+        await database.run('UPDATE hint_categories SET position = ? WHERE id = ? AND room_id = ?', [position++, categoryId, roomId])
       }
       await database.run('COMMIT')
       res.json({ success: true })
@@ -621,13 +700,33 @@ app.put('/api/hints/:id', async (req, res) => {
       }
     }
 
+    // Ensure core language fallbacks to avoid NULL constraint issues
+    const finalText = {
+      es: (textObj.es || '').trim() || 'Traducción pendiente',
+      en: (textObj.en || '').trim() || (textObj.es || '').trim() || 'Translation pending',
+      fr: (textObj.fr || '').trim() || (textObj.es || '').trim() || 'Traduction en attente',
+      de: (textObj.de || '').trim() || (textObj.es || '').trim() || 'Übersetzung ausstehend'
+    }
+
     await database.run(
       `UPDATE hints SET 
        text_es = ?, text_en = ?, text_fr = ?, text_de = ?, 
        category = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [textObj.es, textObj.en, textObj.fr, textObj.de, category, hintId]
+      [finalText.es, finalText.en, finalText.fr, finalText.de, category, hintId]
     )
+
+    // Persist dynamic language translations beyond core languages
+    try {
+      const core = new Set(['es','en','fr','de'])
+      for (const [langCode, value] of Object.entries(textObj || {})) {
+        if (!core.has(langCode) && typeof value === 'string' && value.trim() !== '') {
+          database.addHintTranslation(hintId, langCode, value.trim())
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Warning: Failed to upsert some dynamic translations for hint', hintId, e?.message)
+    }
 
     const updatedHint = await database.get('SELECT * FROM hints WHERE id = ?', [hintId])
     if (updatedHint) {
@@ -674,6 +773,30 @@ app.get('/api/analytics/hints', async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching analytics:', error)
     res.status(500).json({ error: 'Failed to fetch analytics' })
+  }
+})
+
+// Get hint history for a specific room
+app.get('/api/rooms/:roomId/hint-history', async (req, res) => {
+  try {
+    const roomId = parseInt(req.params.roomId)
+    const history = await database.getRoomHintHistory(roomId)
+    res.json(history)
+  } catch (error) {
+    console.error('❌ Error fetching hint history:', error)
+    res.status(500).json({ error: 'Failed to fetch hint history' })
+  }
+})
+
+// Clear hint history for a specific room
+app.delete('/api/rooms/:roomId/hint-history', async (req, res) => {
+  try {
+    const roomId = parseInt(req.params.roomId)
+    await database.clearRoomHintHistory(roomId)
+    res.json({ success: true, message: 'Hint history cleared successfully' })
+  } catch (error) {
+    console.error('❌ Error clearing hint history:', error)
+    res.status(500).json({ error: 'Failed to clear hint history' })
   }
 })
 
@@ -942,13 +1065,15 @@ io.on('connection', (socket) => {
         
         // Simplified hint logic:
         // - If hints_remaining > 0, use a free hint and decrement count
-        // - If hints_remaining === 0, apply time penalty but don't decrement
+        // - If hints_remaining === 0 AND it's not a custom hint, apply time penalty but don't decrement
+        // - Custom hints (hintId === 'custom') never apply time penalty
+        const isCustomHint = data.hintId === 'custom'
         const hasFreeHints = room.hints_remaining > 0
         const newHintsRemaining = hasFreeHints ? room.hints_remaining - 1 : 0
         
-        // Apply time penalty if no free hints remaining
+        // Apply time penalty if no free hints remaining AND it's not a custom hint
         let newTimeRemaining = room.time_remaining
-        if (!hasFreeHints) {
+        if (!hasFreeHints && !isCustomHint) {
           newTimeRemaining = Math.max(0, room.time_remaining - 120) // Subtract 2 minutes (120 seconds)
         }
         
@@ -964,7 +1089,7 @@ io.on('connection', (socket) => {
         const updatedRoom = await database.getRoom(data.roomId)
         
         // Broadcast hint to specific room (including Chrome Cast TV window)
-        const hintEventData = { ...data, timePenaltyApplied: !hasFreeHints }
+        const hintEventData = { ...data, timePenaltyApplied: !hasFreeHints && !isCustomHint }
         const roomName = `room-${data.roomId}`
         
         io.to(roomName).emit('hint-sent', hintEventData)
@@ -1084,26 +1209,62 @@ io.on('connection', (socket) => {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n📁 Shutting down server gracefully...')
+  stopTimerInterval()
+  removeProcessLock()
   await database.close()
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
   console.log('\n📁 Shutting down server gracefully...')
+  stopTimerInterval()
+  removeProcessLock()
   await database.close()
   process.exit(0)
 })
 
+// Handle uncaught exceptions and remove lock
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error)
+  stopTimerInterval()
+  removeProcessLock()
+  process.exit(1)
+})
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason)
+  stopTimerInterval()
+  removeProcessLock()
+  process.exit(1)
+})
+
 // Start server
 initializeServer().then(() => {
-  server.listen(PORT, () => {
+  server.listen(PORT, (error) => {
+    if (error) {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use. Another server instance may be running.`)
+        console.error('❌ Please stop other instances or use a different port.')
+        removeProcessLock()
+        process.exit(1)
+      } else {
+        console.error('❌ Failed to start server:', error)
+        removeProcessLock()
+        process.exit(1)
+      }
+    }
+    
     console.log(`🚀 Game Master Server running on port ${PORT}`)
     console.log(`📊 API available at http://localhost:${PORT}/api`)
     console.log(`💾 Database initialized: gamemaster.db`)
     console.log(`🔗 WebSocket ready for real-time communication`)
+    
+    // Only start the timer interval after server is successfully listening
+    startTimerInterval()
   })
 }).catch((error) => {
-  console.error('❌ Failed to start server:', error)
+  console.error('❌ Failed to initialize server:', error)
+  removeProcessLock()
   process.exit(1)
 })
 
