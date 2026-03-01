@@ -1163,14 +1163,15 @@ io.on('connection', (socket) => {
   // Handle room reset
   socket.on('reset-room', async (roomId) => {
     try {
-      console.log('🔄 Resetting room:', roomId)
+      console.log('🔄 Resetting room:', roomId);
+
       const room = await database.resetRoom(roomId)
       const formattedRoom = formatRoomForFrontend(room)
       io.emit('room-updated', formattedRoom)
       io.emit('room-reset', roomId)
     } catch (error) {
       console.error('❌ Error resetting room:', error)
-      socket.emit('error', { message: 'Failed to reset room' })
+      socket.emit('error', { message: 'Failed to reset room' });
     }
   })
 

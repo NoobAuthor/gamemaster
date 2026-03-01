@@ -46,7 +46,7 @@
   })
 
   // Reactive statement to reload history when room ID changes
-  $: if (room.id !== undefined && room.id !== currentRoomId) {
+  $: if (currentRoomId !== undefined && room.id !== undefined && room.id !== currentRoomId) {
     currentRoomId = room.id
     loadHintHistory()
   }
@@ -59,6 +59,7 @@
       historyAbort = new AbortController()
       hintHistory = await getRoomHintHistory(room.id, { signal: historyAbort.signal })
     } catch (error) {
+      if ((error as any)?.name === 'AbortError') return
       console.error('❌ Error loading hint history:', error)
       hintHistory = []
     } finally {

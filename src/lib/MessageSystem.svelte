@@ -36,7 +36,7 @@
   })
 
   // Reactive statement to reload messages only when room ID actually changes
-  $: if (room.id !== undefined && room.id !== currentRoomId) {
+  $: if (currentRoomId !== undefined && room.id !== undefined && room.id !== currentRoomId) {
     currentRoomId = room.id
     
     // Initialize customMessageByRoom for the new room if it doesn't exist
@@ -79,6 +79,7 @@
       
       // Don't auto-initialize default messages - let admin create them manually if needed
     } catch (error) {
+      if ((error as any)?.name === 'AbortError') return
       console.error('❌ Error cargando mensajes:', error)
       toast.error('No se pudieron cargar los mensajes')
       // Initialize empty messages instead of hardcoded defaults
@@ -218,7 +219,7 @@
       </div>
     {:else}
       <div class="quick-messages">
-        {#each roomMessages[currentLanguage] as message}
+        {#each (roomMessages[currentLanguage] || []) as message}
           <button 
             class="quick-message-btn"
             on:click={() => sendPredefinedMessage(message)}
@@ -226,7 +227,7 @@
             {message}
           </button>
         {/each}
-        {#if roomMessages[currentLanguage].length === 0}
+        {#if (roomMessages[currentLanguage] || []).length === 0}
           <p class="no-messages">No hay mensajes configurados para esta sala</p>
         {/if}
       </div>

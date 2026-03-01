@@ -17,6 +17,8 @@
   class={variantClass + ' ' + sizeClass}
   class:full-width={fullWidth}
   {disabled}
+  on:click
+  on:keydown
 >
   <slot />
 </button>

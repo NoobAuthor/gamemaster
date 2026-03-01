@@ -71,7 +71,7 @@
   })
 
   // Reactive statement to reload hints only when room ID actually changes
-  $: if (room.id !== undefined && room.id !== currentRoomId) {
+  $: if (currentRoomId !== undefined && room.id !== undefined && room.id !== currentRoomId) {
     currentRoomId = room.id
     
     // Initialize customHintByRoom for the new room if it doesn't exist
@@ -104,6 +104,7 @@
       hintsAbort = new AbortController()
       hintsLibrary = await getRoomHints(room.id, { signal: hintsAbort.signal })
     } catch (error) {
+      if ((error as any)?.name === 'AbortError') return
       console.error('❌ Error conectando con servidor:', error)
     } finally {
       loadingHints = false
@@ -118,6 +119,7 @@
       const list = await getRoomCategories(room.id, { signal: categoriesAbort.signal })
       categories = list
     } catch (e) {
+      if ((e as any)?.name === 'AbortError') return
       console.error('❌ Error cargando categorías:', e)
       // Clear categories on error to prevent showing wrong data
       categories = []

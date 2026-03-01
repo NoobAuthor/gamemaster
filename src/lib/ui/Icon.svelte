@@ -20,7 +20,7 @@
 <span
   class="icon"
   {title}
-  style={`width:${size}px;height:${size}px;`}
+  style={`width:${size}px;height:${size}px;--icon-mask:${masks[name]};`}
 ></span>
 
 <style>
@@ -29,9 +29,6 @@
     background: currentColor;
     mask: var(--icon-mask) center/contain no-repeat;
     -webkit-mask: var(--icon-mask) center/contain no-repeat;
-  }
-  .icon {
-    --icon-mask: {masks[name]};
   }
 </style>
 

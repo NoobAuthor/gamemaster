@@ -24,7 +24,13 @@ async function apiFetch<T = unknown>(path: string, init?: RequestInit & { timeou
   const userSignal = signal
   if (userSignal) {
     if (userSignal.aborted) controller.abort()
-    else userSignal.addEventListener('abort', () => controller.abort(), { once: true })
+    else {
+      userSignal.addEventListener(
+        'abort',
+        () => controller.abort(),
+        { once: true }
+      )
+    }
   }
   const timer = window.setTimeout(() => controller.abort(), timeoutMs)
   let r: Response
